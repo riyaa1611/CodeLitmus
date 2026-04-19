@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src {{cspSource}} 'unsafe-inline'; script-src 'nonce-{{nonce}}';">
+  <link rel="stylesheet" href="{{stylesUri}}">
+  <title>VibeAudit Quiz</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: var(--vscode-font-family, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif);
+      font-size: 14px;
+      background: var(--vscode-editor-background, #1e1e1e);
+      color: var(--vscode-editor-foreground, #cccccc);
+      padding: 16px;
+      line-height: 1.5;
+    }
+    .btn {
+      background: var(--vscode-button-background, #0e639c);
+      color: var(--vscode-button-foreground, #ffffff);
+      border: none; padding: 8px 18px; border-radius: 4px;
+      cursor: pointer; font-size: 14px;
+      font-family: var(--vscode-font-family, sans-serif);
+    }
+    .btn:hover { opacity: 0.85; }
+    .btn:disabled { opacity: 0.5; cursor: not-allowed; }
+    .btn-secondary {
+      background: transparent;
+      border: 1px solid var(--vscode-button-background, #0e639c);
+      color: var(--vscode-button-background, #0e639c);
+    }
+    .progress-bar {
+      height: 6px;
+      background: var(--vscode-badge-background, rgba(127,127,127,0.2));
+      border-radius: 3px; overflow: hidden;
+    }
+    .progress-fill { height: 100%; border-radius: 3px; transition: width 0.3s ease; }
+    .section { margin-bottom: 24px; }
+    .section-title {
+      font-size: 11px; text-transform: uppercase;
+      letter-spacing: 0.08em; opacity: 0.6; margin-bottom: 8px;
+    }
+    .card {
+      background: var(--vscode-textBlockQuote-background, rgba(127,127,127,0.07));
+      border: 1px solid var(--vscode-widget-border, rgba(127,127,127,0.2));
+      border-radius: 6px; padding: 14px; margin-bottom: 10px;
+      cursor: pointer; transition: border-color 0.15s;
+    }
+    .card:hover { border-color: var(--vscode-focusBorder, #007acc); }
+    .card.selected { border-color: var(--vscode-button-background, #0e639c); }
+    .card.correct { border-color: var(--vscode-charts-green, #89d185); }
+    .card.wrong { border-color: var(--vscode-charts-red, #f14c4c); }
+    .flex { display: flex; }
+    .gap-8 { gap: 8px; }
+    .mt-16 { margin-top: 16px; }
+    .mt-24 { margin-top: 24px; }
+
+    #loading { text-align: center; padding: 60px; }
+    #loading .spinner { font-size: 32px; animation: spin 1s linear infinite; display: inline-block; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    #quiz-container { display: none; max-width: 700px; }
+    #summary { display: none; text-align: center; padding: 40px 20px; }
+
+    .progress-label { font-size: 12px; opacity: 0.6; margin-bottom: 4px; }
+    .question-text { font-size: 17px; font-weight: 500; margin: 20px 0 16px; line-height: 1.5; }
+    .code-ref {
+      border-left: 3px solid var(--vscode-button-background, #0e639c);
+      padding-left: 12px; margin-bottom: 16px; font-size: 12px; opacity: 0.7;
+    }
+    .option-label { font-weight: 600; margin-right: 10px; min-width: 20px; }
+
+    #result { margin-top: 16px; padding: 14px; border-radius: 6px; display: none; }
+    #result.correct { border: 1px solid var(--vscode-charts-green, #89d185); }
+    #result.wrong { border: 1px solid var(--vscode-charts-red, #f14c4c); }
+    .result-icon { font-size: 22px; margin-bottom: 6px; }
+    .explanation { opacity: 0.85; margin-top: 8px; font-size: 13px; }
+    .danger-note {
+      margin-top: 10px; padding: 8px 12px;
+      border-left: 3px solid var(--vscode-charts-red, #f14c4c);
+      font-size: 13px; opacity: 0.8;
+    }
+    .score-big { font-size: 64px; font-weight: 700; margin: 20px 0; }
+    .summary-label { opacity: 0.7; margin-bottom: 6px; }
+
+    #robot-buddy { position: fixed; bottom: 16px; left: 16px; z-index: 1000; pointer-events: none; --robot-color: var(--vscode-button-background, #0e639c); animation: robot-bob 3s ease-in-out infinite; }
+    #robot-buddy.robot-happy { --robot-color: #4ec94e; animation: robot-jump 0.45s ease-in-out 3; }
+    #robot-buddy.robot-sad { --robot-color: #f14c4c; animation: robot-shake 0.5s ease-in-out 3, robot-droop 2s 1.5s ease-in-out infinite; }
+    @keyframes robot-bob { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-6px); } }
+    @keyframes robot-jump { 0%,100% { transform: translateY(0) scale(1); } 45% { transform: translateY(-15px) scale(1.1); } }
+    @keyframes robot-shake { 0%,100% { transform: translateX(0) rotate(0deg); } 25% { transform: translateX(-7px) rotate(-5deg); } 75% { transform: translateX(7px) rotate(5deg); } }
+    @keyframes robot-droop { 0%,100% { transform: translateY(0); } 50% { transform: translateY(4px); } }
+    .r-eye { animation: r-blink 4s ease-in-out infinite; transform-box: fill-box; transform-origin: center; }
+    @keyframes r-blink { 0%,88%,100% { transform: scaleY(1); } 92% { transform: scaleY(0.05); } }
+    .r-chest { animation: r-pulse 2s ease-in-out infinite; }
+    @keyframes r-pulse { 0%,100% { opacity: 0.5; } 50% { opacity: 1; } }
+    .r-antenna-dot { animation: r-glow 2s ease-in-out infinite; }
+    @keyframes r-glow { 0%,100% { opacity: 0.6; } 50% { opacity: 1; } }
+  </style>
+</head>
+<body>
+  <div id="loading">
+    <div class="spinner">
+      <svg width="32" height="32" viewBox="0 0 32 32" fill="none"><circle cx="16" cy="16" r="13" stroke="var(--vscode-button-background,#0e639c)" stroke-width="3" stroke-dasharray="40 20" stroke-linecap="round"/></svg>
+    </div>
+    <p style="margin-top: 16px; opacity: 0.7;">Generating quiz questions...</p>
+  </div>
+
+  <div id="quiz-container">
+    <div class="section">
+      <div class="progress-label" id="progress-label">Question 1 of 5</div>
+      <div class="progress-bar"><div class="progress-fill" id="progress-fill" style="width:0%"></div></div>
+    </div>
+
+    <div class="question-text" id="question-text"></div>
+    <div class="code-ref" id="code-ref"></div>
+
+    <div id="options"></div>
+
+    <div class="mt-16 flex gap-8" id="action-row">
+      <button class="btn" id="submit-btn" disabled>Submit</button>
+    </div>
+
+    <div id="result">
+      <div class="result-icon" id="result-icon"></div>
+      <div id="result-text"></div>
+      <div class="explanation" id="explanation"></div>
+      <div class="danger-note" id="danger-note" style="display:none"></div>
+      <div class="mt-16">
+        <button class="btn" id="next-btn">Next Question →</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="summary">
+    <h2>Quiz Complete!</h2>
+    <div class="score-big" id="final-score"></div>
+    <div class="summary-label" id="summary-label"></div>
+    <div class="flex gap-8 mt-24" style="justify-content:center">
+      <button class="btn" id="view-report-btn">View Full Report</button>
+      <button class="btn btn-secondary" id="quiz-again-btn">Quiz Again</button>
+    </div>
+  </div>
+
+  <div id="robot-buddy">
+    <svg width="54" height="70" viewBox="0 0 54 70" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <!-- Antenna -->
+      <line x1="27" y1="2" x2="27" y2="11" stroke="var(--robot-color,#0e639c)" stroke-width="2" stroke-linecap="round"/>
+      <circle class="r-antenna-dot" cx="27" cy="2" r="3" fill="var(--robot-color,#0e639c)"/>
+      <!-- Head -->
+      <rect x="7" y="11" width="40" height="28" rx="7" fill="var(--vscode-editor-background,#1e1e1e)" stroke="var(--robot-color,#0e639c)" stroke-width="1.5"/>
+      <!-- Eye sockets -->
+      <circle cx="20" cy="25" r="5.5" fill="rgba(0,0,0,0.4)"/>
+      <circle cx="34" cy="25" r="5.5" fill="rgba(0,0,0,0.4)"/>
+      <!-- Eyes -->
+      <circle class="r-eye" cx="20" cy="25" r="3.8" fill="var(--robot-color,#0e639c)"/>
+      <circle class="r-eye" cx="34" cy="25" r="3.8" fill="var(--robot-color,#0e639c)"/>
+      <!-- Eye shine -->
+      <circle cx="21.5" cy="23.5" r="1.2" fill="rgba(255,255,255,0.65)"/>
+      <circle cx="35.5" cy="23.5" r="1.2" fill="rgba(255,255,255,0.65)"/>
+      <!-- Sad eyebrows (hidden by default) -->
+      <line id="robot-brow-l" x1="15" y1="17.5" x2="23" y2="20.5" stroke="var(--robot-color,#0e639c)" stroke-width="2" stroke-linecap="round" style="display:none"/>
+      <line id="robot-brow-r" x1="31" y1="20.5" x2="39" y2="17.5" stroke="var(--robot-color,#0e639c)" stroke-width="2" stroke-linecap="round" style="display:none"/>
+      <!-- Smile (neutral/happy) -->
+      <path id="robot-smile" d="M16 33 Q27 40 38 33" stroke="var(--robot-color,#0e639c)" stroke-width="1.8" stroke-linecap="round" fill="none"/>
+      <!-- Frown (sad, hidden) -->
+      <path id="robot-frown" d="M16 37 Q27 30 38 37" stroke="var(--robot-color,#0e639c)" stroke-width="1.8" stroke-linecap="round" fill="none" style="display:none"/>
+      <!-- Body -->
+      <rect x="11" y="41" width="32" height="20" rx="5" fill="var(--vscode-editor-background,#1e1e1e)" stroke="var(--robot-color,#0e639c)" stroke-width="1.5"/>
+      <!-- Chest panel -->
+      <rect x="17" y="47" width="20" height="8" rx="3" fill="rgba(0,0,0,0.25)" stroke="rgba(127,127,127,0.15)" stroke-width="1"/>
+      <!-- Chest light -->
+      <circle class="r-chest" cx="27" cy="51" r="3.2" fill="var(--robot-color,#0e639c)"/>
+      <!-- Arms -->
+      <rect x="1" y="43" width="8" height="13" rx="4" fill="var(--vscode-editor-background,#1e1e1e)" stroke="var(--robot-color,#0e639c)" stroke-width="1.5"/>
+      <rect x="45" y="43" width="8" height="13" rx="4" fill="var(--vscode-editor-background,#1e1e1e)" stroke="var(--robot-color,#0e639c)" stroke-width="1.5"/>
+      <!-- Legs -->
+      <rect x="14" y="61" width="10" height="9" rx="3" fill="var(--vscode-editor-background,#1e1e1e)" stroke="var(--robot-color,#0e639c)" stroke-width="1.5"/>
+      <rect x="30" y="61" width="10" height="9" rx="3" fill="var(--vscode-editor-background,#1e1e1e)" stroke="var(--robot-color,#0e639c)" stroke-width="1.5"/>
+    </svg>
+  </div>
+
+  <script nonce="{{nonce}}" src="{{scriptUri}}"></script>
+</body>
+</html>

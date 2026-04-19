@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src {{cspSource}} 'unsafe-inline'; script-src 'nonce-{{nonce}}';">
+  <link rel="stylesheet" href="{{stylesUri}}">
+  <title>VibeAudit Report</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: var(--vscode-font-family, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif);
+      font-size: 14px;
+      background: var(--vscode-editor-background, #1e1e1e);
+      color: var(--vscode-editor-foreground, #cccccc);
+      padding: 16px;
+      line-height: 1.5;
+    }
+    .section { margin-bottom: 24px; }
+    .section-title {
+      font-size: 11px; text-transform: uppercase;
+      letter-spacing: 0.08em; opacity: 0.6; margin-bottom: 8px;
+    }
+
+    .hero { text-align: center; padding: 32px 0; }
+    .score-circle { display: inline-block; position: relative; }
+    .score-number { font-size: 56px; font-weight: 700; }
+    .score-label { font-size: 15px; opacity: 0.7; margin-top: 6px; }
+
+    .tabs {
+      display: flex; gap: 4px;
+      border-bottom: 1px solid var(--vscode-widget-border, rgba(127,127,127,0.2));
+      margin-bottom: 20px;
+    }
+    .tab {
+      padding: 8px 16px; cursor: pointer;
+      border-bottom: 2px solid transparent;
+      font-size: 13px; opacity: 0.7;
+    }
+    .tab.active { border-bottom-color: var(--vscode-button-background, #0e639c); opacity: 1; }
+    .tab-content { display: none; }
+    .tab-content.active { display: block; }
+
+    .bar-row { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; }
+    .bar-label {
+      width: 160px; font-size: 13px; flex-shrink: 0;
+      white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    }
+    .bar-track {
+      flex: 1; height: 10px;
+      background: rgba(127,127,127,0.15); border-radius: 5px; overflow: hidden;
+    }
+    .bar-fill { height: 100%; border-radius: 5px; }
+    .bar-pct { width: 36px; text-align: right; font-size: 12px; opacity: 0.7; }
+
+    .danger-item {
+      display: flex; justify-content: space-between; align-items: center;
+      padding: 10px 14px; border-radius: 6px; margin-bottom: 8px;
+      background: rgba(241,76,76,0.08); border: 1px solid rgba(241,76,76,0.25); cursor: pointer;
+    }
+    .danger-item:hover { border-color: rgba(241,76,76,0.5); }
+    .danger-info { font-size: 13px; }
+    .danger-meta { font-size: 12px; opacity: 0.6; margin-top: 2px; }
+
+    .timeline { position: relative; }
+    svg text { fill: var(--vscode-editor-foreground, #cccccc); }
+
+    .learning-item {
+      display: flex; gap: 12px; margin-bottom: 16px; padding: 12px; border-radius: 6px;
+      background: rgba(127,127,127,0.07); border: 1px solid rgba(127,127,127,0.15);
+    }
+    .priority-num { font-size: 20px; font-weight: 700; opacity: 0.4; min-width: 28px; }
+    .learning-concept { font-weight: 500; margin-bottom: 4px; }
+    .learning-file {
+      font-size: 12px; opacity: 0.6; font-family: monospace;
+      margin-bottom: 4px; cursor: pointer; text-decoration: underline;
+    }
+    .learning-why { font-size: 13px; opacity: 0.75; }
+
+    .score-critical { color: var(--vscode-charts-red, #f14c4c); }
+    .score-partial  { color: var(--vscode-charts-yellow, #cca700); }
+    .score-solid    { color: var(--vscode-charts-green, #89d185); }
+    .score-deep     { color: var(--vscode-charts-blue, #75beff); }
+
+    #robot-buddy { position: fixed; bottom: 16px; left: 16px; z-index: 1000; pointer-events: none; animation: robot-bob 3s ease-in-out infinite; }
+    @keyframes robot-bob { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-6px); } }
+    .r-eye { animation: r-blink 4s ease-in-out infinite; transform-box: fill-box; transform-origin: center; }
+    @keyframes r-blink { 0%,88%,100% { transform: scaleY(1); } 92% { transform: scaleY(0.05); } }
+    .r-chest { animation: r-pulse 2s ease-in-out infinite; }
+    @keyframes r-pulse { 0%,100% { opacity: 0.5; } 50% { opacity: 1; } }
+    .r-antenna-dot { animation: r-glow 2s ease-in-out infinite; }
+    @keyframes r-glow { 0%,100% { opacity: 0.6; } 50% { opacity: 1; } }
+  </style>
+</head>
+<body>
+  <div class="hero">
+    <div class="score-circle">
+      <svg width="140" height="140" viewBox="0 0 140 140">
+        <circle cx="70" cy="70" r="60" fill="none" stroke="rgba(127,127,127,0.15)" stroke-width="12"/>
+        <circle id="score-ring" cx="70" cy="70" r="60" fill="none" stroke-width="12"
+          stroke-linecap="round" transform="rotate(-90 70 70)"
+          stroke-dasharray="377" stroke-dashoffset="377"/>
+      </svg>
+      <div style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);text-align:center">
+        <div class="score-number" id="overall-score">—</div>
+        <div style="font-size:12px;opacity:0.5">overall</div>
+      </div>
+    </div>
+    <div class="score-label" id="score-label">Run a quiz to see your understanding score</div>
+    <button id="start-quiz-btn" style="margin-top:16px;background:var(--vscode-button-background,#0e639c);color:var(--vscode-button-foreground,#fff);border:none;padding:8px 20px;border-radius:4px;cursor:pointer;font-size:14px;">Start Quiz</button>
+  </div>
+
+  <div class="tabs">
+    <div class="tab active" data-tab="overview">Overview</div>
+    <div class="tab" data-tab="danger">Danger Zones</div>
+    <div class="tab" data-tab="progress">Progress</div>
+    <div class="tab" data-tab="learning">Learning Path</div>
+    <div class="tab" data-tab="history">History</div>
+    <div class="tab" data-tab="team">Team</div>
+  </div>
+
+  <div class="tab-content active" id="tab-overview">
+    <div class="section">
+      <div class="section-title">By Category</div>
+      <div id="category-bars"></div>
+    </div>
+    <div class="section">
+      <div class="section-title">By File</div>
+      <div id="file-bars"></div>
+    </div>
+  </div>
+
+  <div class="tab-content" id="tab-danger">
+    <div id="danger-list"><p style="opacity:0.5">No danger zones detected yet. Complete a quiz first.</p></div>
+  </div>
+
+  <div class="tab-content" id="tab-progress">
+    <div id="timeline-chart"></div>
+  </div>
+
+  <div class="tab-content" id="tab-learning">
+    <div id="learning-path"><p style="opacity:0.5">Complete a quiz to generate a personalized learning path.</p></div>
+  </div>
+
+  <div class="tab-content" id="tab-history">
+    <div id="history-list"><p style="opacity:0.5">No quiz sessions yet.</p></div>
+  </div>
+
+  <div class="tab-content" id="tab-team">
+    <div id="team-list"><p style="opacity:0.5">Import teammate score files to compare. Use "VibeAudit: Import Team Scores".</p></div>
+  </div>
+
+  <div id="robot-buddy">
+    <svg width="54" height="70" viewBox="0 0 54 70" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <!-- Antenna -->
+      <line x1="27" y1="2" x2="27" y2="11" stroke="var(--vscode-button-background,#0e639c)" stroke-width="2" stroke-linecap="round"/>
+      <circle class="r-antenna-dot" cx="27" cy="2" r="3" fill="var(--vscode-button-background,#0e639c)"/>
+      <!-- Head -->
+      <rect x="7" y="11" width="40" height="28" rx="7" fill="var(--vscode-editor-background,#1e1e1e)" stroke="var(--vscode-button-background,#0e639c)" stroke-width="1.5"/>
+      <!-- Eye sockets -->
+      <circle cx="20" cy="25" r="5.5" fill="rgba(0,0,0,0.4)"/>
+      <circle cx="34" cy="25" r="5.5" fill="rgba(0,0,0,0.4)"/>
+      <!-- Eyes -->
+      <circle class="r-eye" cx="20" cy="25" r="3.8" fill="var(--vscode-button-background,#0e639c)"/>
+      <circle class="r-eye" cx="34" cy="25" r="3.8" fill="var(--vscode-button-background,#0e639c)"/>
+      <!-- Eye shine -->
+      <circle cx="21.5" cy="23.5" r="1.2" fill="rgba(255,255,255,0.65)"/>
+      <circle cx="35.5" cy="23.5" r="1.2" fill="rgba(255,255,255,0.65)"/>
+      <!-- Smile -->
+      <path d="M16 33 Q27 40 38 33" stroke="var(--vscode-button-background,#0e639c)" stroke-width="1.8" stroke-linecap="round" fill="none"/>
+      <!-- Body -->
+      <rect x="11" y="41" width="32" height="20" rx="5" fill="var(--vscode-editor-background,#1e1e1e)" stroke="var(--vscode-button-background,#0e639c)" stroke-width="1.5"/>
+      <!-- Chest panel -->
+      <rect x="17" y="47" width="20" height="8" rx="3" fill="rgba(0,0,0,0.25)" stroke="rgba(127,127,127,0.15)" stroke-width="1"/>
+      <!-- Chest light -->
+      <circle class="r-chest" cx="27" cy="51" r="3.2" fill="var(--vscode-button-background,#0e639c)"/>
+      <!-- Arms -->
+      <rect x="1" y="43" width="8" height="13" rx="4" fill="var(--vscode-editor-background,#1e1e1e)" stroke="var(--vscode-button-background,#0e639c)" stroke-width="1.5"/>
+      <rect x="45" y="43" width="8" height="13" rx="4" fill="var(--vscode-editor-background,#1e1e1e)" stroke="var(--vscode-button-background,#0e639c)" stroke-width="1.5"/>
+      <!-- Legs -->
+      <rect x="14" y="61" width="10" height="9" rx="3" fill="var(--vscode-editor-background,#1e1e1e)" stroke="var(--vscode-button-background,#0e639c)" stroke-width="1.5"/>
+      <rect x="30" y="61" width="10" height="9" rx="3" fill="var(--vscode-editor-background,#1e1e1e)" stroke="var(--vscode-button-background,#0e639c)" stroke-width="1.5"/>
+    </svg>
+  </div>
+
+  <script nonce="{{nonce}}" src="{{scriptUri}}"></script>
+</body>
+</html>

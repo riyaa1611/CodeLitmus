@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src {{cspSource}} 'unsafe-inline'; script-src 'nonce-{{nonce}}'; font-src 'self';">
+  <link rel="stylesheet" href="{{stylesUri}}">
+  <title>VibeAudit Setup</title>
+  <style>
+    /* Inline fallback — works even if external styles.css fails to load */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: var(--vscode-font-family, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif);
+      font-size: 14px;
+      background: var(--vscode-editor-background, #1e1e1e);
+      color: var(--vscode-editor-foreground, #cccccc);
+      padding: 0 24px 24px;
+      line-height: 1.5;
+    }
+    .hero { text-align: center; padding: 40px 20px 28px; }
+    .hero h1 { font-size: 26px; margin-bottom: 10px; }
+    .hero p { opacity: 0.75; max-width: 440px; margin: 0 auto; }
+    .setup-card { max-width: 480px; margin: 0 auto; }
+    .section-title {
+      font-size: 11px; text-transform: uppercase; letter-spacing: 0.08em;
+      opacity: 0.55; margin-bottom: 10px;
+    }
+    .field-label { font-size: 13px; margin-bottom: 6px; opacity: 0.8; }
+    .hint { font-size: 12px; opacity: 0.55; margin-top: 6px; }
+    a { color: var(--vscode-textLink-foreground, #4da6ff); }
+    input[type="password"] {
+      display: block; width: 100%;
+      background: var(--vscode-input-background, #3c3c3c);
+      color: var(--vscode-input-foreground, #cccccc);
+      border: 1px solid var(--vscode-input-border, #555);
+      padding: 8px 10px; border-radius: 4px;
+      font-family: inherit; font-size: 14px;
+    }
+    input[type="password"]:focus {
+      outline: none; border-color: var(--vscode-focusBorder, #007acc);
+    }
+    input:disabled { opacity: 0.5; }
+    .btn {
+      background: var(--vscode-button-background, #0e639c);
+      color: var(--vscode-button-foreground, #ffffff);
+      border: none; padding: 8px 18px; border-radius: 4px;
+      cursor: pointer; font-size: 14px; font-family: inherit;
+      margin-top: 16px;
+    }
+    .btn:hover { opacity: 0.85; }
+    .btn:disabled { opacity: 0.5; cursor: not-allowed; }
+    .status-message {
+      margin-top: 12px; padding: 8px 12px; border-radius: 4px;
+      font-size: 13px; display: none;
+    }
+    .status-message.validating { color: #cca700; background: rgba(255,196,0,0.1); }
+    .status-message.success    { color: #89d185; background: rgba(0,180,0,0.1); }
+    .status-message.error      { color: #f14c4c; background: rgba(255,0,0,0.1); }
+  </style>
+</head>
+<body>
+  <div class="hero">
+    <h1>VibeAudit</h1>
+    <p>Stop vibe coding blindly. Find out what you actually understand about your own codebase.</p>
+  </div>
+
+  <div class="setup-card">
+    <div class="section-title">Step 1 — Connect to OpenRouter</div>
+    <div class="field-label">API Key</div>
+    <input type="password" id="apiKey" placeholder="sk-or-v1-..." autocomplete="off" />
+    <p class="hint">
+      Free key at <a href="https://openrouter.ai/keys">openrouter.ai/keys</a>.<br>
+      Stored encrypted in VS Code — never shared except with OpenRouter.
+    </p>
+    <button class="btn" id="saveBtn">Verify &amp; Connect</button>
+    <div id="keyStatus" class="status-message"></div>
+  </div>
+
+  <script nonce="{{nonce}}">
+    const vscode = acquireVsCodeApi();
+    const apiKeyInput = document.getElementById('apiKey');
+    const saveBtn = document.getElementById('saveBtn');
+    const keyStatus = document.getElementById('keyStatus');
+
+    function setStatus(type, text) {
+      keyStatus.className = 'status-message ' + type;
+      keyStatus.textContent = text;
+      keyStatus.style.display = 'block';
+    }
+
+    saveBtn.addEventListener('click', () => {
+      const key = apiKeyInput.value.trim();
+      if (!key) { setStatus('error', 'API key cannot be empty.'); return; }
+      saveBtn.disabled = true;
+      apiKeyInput.disabled = true;
+      setStatus('validating', 'Verifying API key...');
+      vscode.postMessage({ type: 'saveApiKey', data: { key } });
+    });
+
+    window.addEventListener('message', e => {
+      const msg = e.data;
+      if (msg.type === 'keyValidating') {
+        saveBtn.disabled = true;
+        apiKeyInput.disabled = true;
+        setStatus('validating', 'Verifying API key...');
+      } else if (msg.type === 'keyValidation') {
+        if (msg.data.ok) {
+          setStatus('success', 'Connected! Scanning workspace...');
+        } else {
+          setStatus('error', msg.data.error);
+          saveBtn.disabled = false;
+          apiKeyInput.disabled = false;
+        }
+      }
+    });
+  </script>
+</body>
+</html>

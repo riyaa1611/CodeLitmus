@@ -1,0 +1,150 @@
+{
+  "name": "vibeaudit",
+  "displayName": "VibeAudit — Do You Understand Your Own Code?",
+  "description": "AI-powered codebase understanding assessment. Stop vibe coding blindly — find out what you actually know.",
+  "version": "0.1.0",
+  "publisher": "riyaa1611",
+  "engines": { "vscode": "^1.85.0" },
+  "categories": ["Testing", "Education", "Other"],
+  "keywords": ["vibe coding", "code understanding", "quiz", "ai", "assessment", "audit", "learning"],
+  "activationEvents": [
+    "workspaceContains:**/*.ts",
+    "workspaceContains:**/*.tsx",
+    "workspaceContains:**/*.js",
+    "workspaceContains:**/*.jsx",
+    "workspaceContains:**/*.py",
+    "workspaceContains:package.json",
+    "workspaceContains:requirements.txt",
+    "workspaceContains:pyproject.toml"
+  ],
+  "main": "./dist/extension.js",
+  "icon": "media/icon.png",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/riyaa1611/vibeaudit"
+  },
+  "contributes": {
+    "commands": [
+      { "command": "vibeaudit.scanWorkspace", "title": "VibeAudit: Scan Workspace" },
+      { "command": "vibeaudit.startQuiz", "title": "VibeAudit: Start Quiz" },
+      { "command": "vibeaudit.startFocusedQuiz", "title": "VibeAudit: Quiz on Current File" },
+      { "command": "vibeaudit.showReport", "title": "VibeAudit: Show Report" },
+      { "command": "vibeaudit.showDangerZones", "title": "VibeAudit: Show Danger Zones" },
+      { "command": "vibeaudit.setApiKey", "title": "VibeAudit: Set OpenRouter API Key" },
+      { "command": "vibeaudit.resetScores", "title": "VibeAudit: Reset All Scores" },
+      { "command": "vibeaudit.pinCurrentFile", "title": "VibeAudit: Pin File for Quiz Focus" },
+      { "command": "vibeaudit.unpinFile", "title": "VibeAudit: Unpin File" },
+      { "command": "vibeaudit.startPinnedQuiz", "title": "VibeAudit: Quiz Pinned Files Only" },
+      { "command": "vibeaudit.exportScores", "title": "VibeAudit: Export Scores (Team)" },
+      { "command": "vibeaudit.importScores", "title": "VibeAudit: Import Team Scores" }
+    ],
+    "configuration": {
+      "title": "VibeAudit",
+      "properties": {
+        "vibeaudit.llmModel": {
+          "type": "string",
+          "default": "deepseek/deepseek-chat-v3-0324:free",
+          "description": "OpenRouter model ID for quiz generation. Browse free models at https://openrouter.ai/models?q=free",
+          "order": 1
+        },
+        "vibeaudit.questionsPerSession": {
+          "type": "number",
+          "default": 10,
+          "minimum": 3,
+          "maximum": 15,
+          "description": "Number of questions per quiz session"
+        },
+        "vibeaudit.difficultyOverride": {
+          "type": "number",
+          "default": 0,
+          "minimum": 0,
+          "maximum": 5,
+          "description": "Fixed quiz difficulty (1=Easy, 3=Normal, 5=Hard). Set to 0 to always prompt."
+        },
+        "vibeaudit.autoScanOnOpen": {
+          "type": "boolean",
+          "default": true,
+          "description": "Automatically scan workspace when opened"
+        },
+        "vibeaudit.showCodeLens": {
+          "type": "boolean",
+          "default": true,
+          "description": "Show VibeAudit CodeLens annotations above functions"
+        },
+        "vibeaudit.supportedLanguages": {
+          "type": "array",
+          "default": ["typescript", "javascript", "python"],
+          "description": "Languages to analyze"
+        }
+      }
+    },
+    "viewsContainers": {
+      "activitybar": [
+        {
+          "id": "vibeaudit",
+          "title": "VibeAudit",
+          "icon": "media/sidebar-icon.svg"
+        }
+      ]
+    },
+    "views": {
+      "vibeaudit": [
+        {
+          "id": "vibeaudit.fileScores",
+          "name": "Understanding Scores"
+        },
+        {
+          "id": "vibeaudit.dangerZones",
+          "name": "Danger Zones"
+        },
+        {
+          "id": "vibeaudit.pinnedFiles",
+          "name": "Pinned Focus Files"
+        }
+      ]
+    },
+    "menus": {
+      "view/item/context": [
+        {
+          "command": "vibeaudit.startFocusedQuiz",
+          "when": "view == vibeaudit.fileScores",
+          "group": "vibeaudit"
+        },
+        {
+          "command": "vibeaudit.unpinFile",
+          "when": "view == vibeaudit.pinnedFiles && viewItem == vibeauditPinnedFile",
+          "group": "vibeaudit"
+        }
+      ]
+    },
+    "keybindings": [
+      {
+        "command": "vibeaudit.startQuiz",
+        "key": "ctrl+alt+v",
+        "mac": "cmd+alt+v",
+        "when": "workspaceFolderCount > 0"
+      },
+      {
+        "command": "vibeaudit.showReport",
+        "key": "ctrl+alt+r",
+        "mac": "cmd+alt+r",
+        "when": "workspaceFolderCount > 0"
+      }
+    ]
+  },
+  "scripts": {
+    "build": "node esbuild.config.mjs",
+    "watch": "node esbuild.config.mjs --watch",
+    "package": "vsce package",
+    "publish": "vsce publish",
+    "test": "node ./out/test/runTest.js"
+  },
+  "devDependencies": {
+    "@types/node": "^20.0.0",
+    "@types/vscode": "^1.85.0",
+    "@vscode/test-electron": "^2.3.0",
+    "esbuild": "^0.20.0",
+    "typescript": "^5.3.0",
+    "@vscode/vsce": "^2.24.0"
+  }
+}
