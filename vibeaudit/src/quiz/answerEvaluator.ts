@@ -26,6 +26,19 @@ export class AnswerEvaluator {
       };
     }
 
+    // If no API key provided, use local (deterministic) evaluation
+    if (!params.apiKey || params.apiKey.trim() === '') {
+      const isCorrect = selected.label === correct.label;
+      return {
+        isCorrect,
+        understandingDepth: isCorrect ? 'moderate' : 'surface',
+        feedback: isCorrect
+          ? `Correct! ${params.question.explanation}`
+          : `Incorrect. The correct answer was: "${correct.text}"\n\n${params.question.explanation}`,
+        conceptGap: isCorrect ? null : `Review the code at ${params.question.codeReference.file}:${params.question.codeReference.startLine + 1}`,
+      };
+    }
+
     let code = '';
     try {
       code = fs.readFileSync(params.question.codeReference.file, 'utf8')

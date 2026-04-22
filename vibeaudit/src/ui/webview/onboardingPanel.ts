@@ -53,7 +53,7 @@ export class OnboardingPanel {
     }
     const panel = vscode.window.createWebviewPanel(
       'vibeauditOnboarding',
-      'VibeAudit Setup',
+      'VibeAudit — Optional: Add AI Enhancement',
       vscode.ViewColumn.One,
       { enableScripts: true, localResourceRoots: [extensionUri] }
     );
@@ -91,13 +91,14 @@ export class OnboardingPanel {
   <meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'unsafe-inline'; script-src 'nonce-${nonce}';">
   <style>
     body { font-family: sans-serif; padding: 40px; background: #1e1e1e; color: #cccccc; }
-    h2 { color: #f14c4c; }
+    h2 { color: #4ec9b0; }
     code { background: #333; padding: 2px 6px; border-radius: 3px; font-size: 12px; }
   </style>
 </head>
 <body>
-  <h2>VibeAudit: Setup Error</h2>
-  <p>Webview templates could not be loaded.</p>
+  <h2>VibeAudit is ready!</h2>
+  <p>You can start quizzing immediately — no API key needed.</p>
+  <p>Add an OpenRouter API key to get AI-generated explanations:</p>
   <p>Run in project folder:</p>
   <pre><code>node esbuild.config.mjs</code></pre>
   <p>Then reinstall the extension.</p>
