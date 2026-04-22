@@ -90,20 +90,13 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
 
   async function startQuizCommand(focusArea?: string, pinnedFiles?: string[]): Promise<void> {
     if (!requireWorkspace()) { return; }
+    // Do NOT return early if no API key — the quiz can run without one (local mode)
     const hasKey = await apiKeyManager.hasApiKey();
-    if (!hasKey) {
-      const choice = await vscode.window.showWarningMessage(
-        'VibeAudit needs an OpenRouter API key to generate quiz questions.',
-        'Set API Key'
-      );
-      if (choice === 'Set API Key') {
-        await vscode.commands.executeCommand('vibeaudit.setApiKey');
-      }
-      return;
-    }
+    // hasKey is passed down to session start to enable LLM enhancement if available
+    void hasKey;
     const session = await quizEngine.startSession(focusArea, pinnedFiles);
     if (!session || session.questions.length === 0) {
-      vscode.window.showWarningMessage('VibeAudit: No questions generated. Scan workspace first and verify your API key.');
+      vscode.window.showWarningMessage('VibeAudit: No questions generated. Scan workspace first.');
       return;
     }
     const panel = QuizPanel.show(
@@ -294,14 +287,15 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
   // First launch or restore
   if (!stateManager.isInitialized()) {
     const hasKey = await apiKeyManager.hasApiKey();
+    const config = vscode.workspace.getConfiguration('vibeaudit');
+    // Always auto-scan on first launch regardless of API key
+    if (config.get<boolean>('autoScanOnOpen', true)) { runScan(); }
+    // Show onboarding as a suggestion if no key (non-blocking)
     if (!hasKey) {
       OnboardingPanel.show(context.extensionUri, apiKeyManager, async (key) => {
         await apiKeyManager.setApiKey(key);
-        await runScan();
+        // No need to re-scan — scan already started above
       });
-    } else {
-      const config = vscode.workspace.getConfiguration('vibeaudit');
-      if (config.get<boolean>('autoScanOnOpen', true)) { runScan(); }
     }
   } else {
     const report = stateManager.getReport();
