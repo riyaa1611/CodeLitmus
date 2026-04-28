@@ -1,12 +1,12 @@
 {
   "name": "codelitmus",
   "displayName": "CodeLitmus — Do You Understand Your Own Code?",
-  "description": "AI-powered codebase understanding assessment. Stop vibe coding blindly — find out what you actually know.",
-  "version": "0.1.1",
+  "description": "Codebase understanding assessment for VS Code. Quiz yourself on your own code — find dangerous blind spots before they break in production.",
+  "version": "0.1.2",
   "publisher": "RiyaGaur",
   "engines": { "vscode": "^1.85.0" },
   "categories": ["Testing", "Education", "Other"],
-  "keywords": ["vibe coding", "code understanding", "quiz", "ai", "assessment", "audit", "learning"],
+  "keywords": ["code understanding", "quiz", "code audit", "static analysis", "assessment", "learning", "education"],
   "activationEvents": [
     "workspaceContains:**/*.ts",
     "workspaceContains:**/*.tsx",
@@ -21,7 +21,7 @@
   "icon": "media/icon.png",
   "repository": {
     "type": "git",
-    "url": "https://github.com/riyaa1611/CodeLitmus"
+    "url": "https://github.com/riyaa1611/CodeLitmus.git"
   },
   "contributes": {
     "commands": [
@@ -31,8 +31,7 @@
       { "command": "codelitmus.startFocusedQuiz", "title": "CodeLitmus: Quiz on Current File" },
       { "command": "codelitmus.showReport", "title": "CodeLitmus: Show Report" },
       { "command": "codelitmus.showDangerZones", "title": "CodeLitmus: Show Danger Zones" },
-      { "command": "codelitmus.setApiKey", "title": "CodeLitmus: Set OpenRouter API Key" },
-      { "command": "codelitmus.resetScores", "title": "CodeLitmus: Reset All Scores" },
+{ "command": "codelitmus.resetScores", "title": "CodeLitmus: Reset All Scores" },
       { "command": "codelitmus.pinCurrentFile", "title": "CodeLitmus: Pin File for Quiz Focus" },
       { "command": "codelitmus.unpinFile", "title": "CodeLitmus: Unpin File" },
       { "command": "codelitmus.startPinnedQuiz", "title": "CodeLitmus: Quiz Pinned Files Only" },
@@ -42,12 +41,6 @@
     "configuration": {
       "title": "CodeLitmus",
       "properties": {
-        "codelitmus.llmModel": {
-          "type": "string",
-          "default": "deepseek/deepseek-chat-v3-0324:free",
-          "description": "OpenRouter model ID for quiz generation. Browse free models at https://openrouter.ai/models?q=free",
-          "order": 1
-        },
         "codelitmus.questionsPerSession": {
           "type": "number",
           "default": 10,

@@ -161,8 +161,8 @@ export class QuizEngine {
       filtered = paths.filter(p => p.category === focusArea || p.relativePath.includes(focusArea));
     }
     return filtered.sort((a, b) => {
-      const scoreA = fileScores.find(s => s.file === a.relativePath)?.score ?? 100;
-      const scoreB = fileScores.find(s => s.file === b.relativePath)?.score ?? 100;
+      const scoreA = fileScores.find(s => s.file === a.file)?.score ?? 100;
+      const scoreB = fileScores.find(s => s.file === b.file)?.score ?? 100;
       const priorityA = a.riskLevel * (1 - scoreA / 100);
       const priorityB = b.riskLevel * (1 - scoreB / 100);
       return priorityB - priorityA;
