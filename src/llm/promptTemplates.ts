@@ -1,4 +1,4 @@
-export const QUESTION_GENERATION_SYSTEM = `You are VibeAudit, a code understanding assessment engine. You generate quiz questions that test whether a developer truly understands their own code — not general programming knowledge.
+﻿export const QUESTION_GENERATION_SYSTEM = `You are CodeLitmus, a code understanding assessment engine. You generate quiz questions that test whether a developer truly understands their own code — not general programming knowledge.
 
 Rules:
 - Questions must be SPECIFIC to the provided code. Never ask generic programming questions.

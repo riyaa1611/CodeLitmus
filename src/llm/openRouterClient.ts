@@ -1,4 +1,4 @@
-import * as vscode from 'vscode';
+﻿import * as vscode from 'vscode';
 import { OPENROUTER_BASE_URL, HTTP_REFERER, APP_TITLE, LLM_RETRY_DELAYS, DEFAULT_MODEL } from '../utils/constants';
 
 export interface ChatMessage {
@@ -89,7 +89,7 @@ export class OpenRouterClient {
         if (response.status === 429) {
           if (attempt < LLM_RETRY_DELAYS.length) {
             const delay = LLM_RETRY_DELAYS[attempt];
-            vscode.window.showInformationMessage(`VibeAudit: Rate limited, retrying in ${delay / 1000}s...`);
+            vscode.window.showInformationMessage(`CodeLitmus: Rate limited, retrying in ${delay / 1000}s...`);
             await sleep(delay);
             continue;
           }
@@ -108,12 +108,12 @@ export class OpenRouterClient {
 
           if (response.status === 404 || errorCode === 'model_not_found' || errorMessage.includes('not found')) {
             const choice = await vscode.window.showErrorMessage(
-              `VibeAudit: Model "${model}" not found on OpenRouter. It may have been removed.`,
+              `CodeLitmus: Model "${model}" not found on OpenRouter. It may have been removed.`,
               'Open Settings',
               'Browse Free Models'
             );
             if (choice === 'Open Settings') {
-              await vscode.commands.executeCommand('workbench.action.openSettings', 'vibeaudit.llmModel');
+              await vscode.commands.executeCommand('workbench.action.openSettings', 'codelitmus.llmModel');
             } else if (choice === 'Browse Free Models') {
               await vscode.env.openExternal(vscode.Uri.parse('https://openrouter.ai/models?q=free'));
             }
@@ -122,11 +122,11 @@ export class OpenRouterClient {
 
           if (response.status === 401) {
             const choice = await vscode.window.showErrorMessage(
-              'VibeAudit: Invalid OpenRouter API key.',
+              'CodeLitmus: Invalid OpenRouter API key.',
               'Update API Key'
             );
             if (choice === 'Update API Key') {
-              await vscode.commands.executeCommand('vibeaudit.setApiKey');
+              await vscode.commands.executeCommand('codelitmus.setApiKey');
             }
             throw new Error('Invalid API key');
           }

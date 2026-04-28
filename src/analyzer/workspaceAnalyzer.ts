@@ -1,4 +1,4 @@
-import * as vscode from 'vscode';
+﻿import * as vscode from 'vscode';
 import { scanWorkspace } from './workspaceScanner';
 import { detectProjectProfile } from './languageDetector';
 import { extractSymbols } from './symbolExtractor';
@@ -14,7 +14,7 @@ export async function analyzeWorkspace(workspaceRoot: string): Promise<Workspace
   let scanned = 0;
   const progress = await vscode.window.withProgress<WorkspaceAnalysis>({
     location: vscode.ProgressLocation.Notification,
-    title: 'VibeAudit: Scanning workspace...',
+    title: 'CodeLitmus: Scanning workspace...',
     cancellable: false,
   }, async (prog) => {
     const files = await scanWorkspace(workspaceRoot, (done, total) => {

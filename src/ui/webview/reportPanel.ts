@@ -1,8 +1,8 @@
-import * as vscode from 'vscode';
+﻿import * as vscode from 'vscode';
 import * as fs from 'fs';
 import * as path from 'path';
 import { getNonce } from './panelUtils';
-import type { ScoreReport, QuizSession } from '../../types';
+import type { ScoreReport, QuizSession, LearningPathItem } from '../../types';
 import { buildProgressTimeline } from '../../scoring/progressTracker';
 
 export class ReportPanel {
@@ -45,8 +45,8 @@ export class ReportPanel {
       return;
     }
     const panel = vscode.window.createWebviewPanel(
-      'vibeauditReport',
-      'VibeAudit Report',
+      'CodeLitmusReport',
+      'CodeLitmus Report',
       vscode.ViewColumn.One,
       { enableScripts: true, localResourceRoots: [extensionUri], retainContextWhenHidden: true }
     );
@@ -70,11 +70,75 @@ export class ReportPanel {
         dangerZones: report?.dangerZones ?? [],
         categoryScores: report?.categoryScores ?? [],
         timeline,
-        learningPath: [],
+        learningPath: this.buildLearningPath(report, sessions),
         sessions,
         teamImports: teamImports ?? [],
       },
     });
+  }
+
+  private buildLearningPath(report: ScoreReport | undefined, sessions: QuizSession[]): LearningPathItem[] {
+    const items: LearningPathItem[] = [];
+    const seen = new Set<string>();
+
+    // Wrong answers from recent sessions — use question category + explanation
+    for (const session of [...sessions].reverse()) {
+      for (let i = 0; i < session.answers.length; i++) {
+        const ans = session.answers[i];
+        if (ans.isCorrect) { continue; }
+        const q = session.questions[i];
+        if (!q?.codeReference) { continue; }
+        const key = `${q.codeReference.file}:${q.codeReference.startLine}`;
+        if (seen.has(key)) { continue; }
+        seen.add(key);
+        items.push({
+          file: q.codeReference.file,
+          startLine: q.codeReference.startLine,
+          endLine: q.codeReference.endLine,
+          concept: `${q.category.replace(/-/g, ' ')} — ${q.question.slice(0, 60)}…`,
+          whyItMatters: ans.feedback,
+          priority: items.length + 1,
+        });
+        if (items.length >= 10) { break; }
+      }
+      if (items.length >= 10) { break; }
+    }
+
+    // Danger zones as additional items
+    const zones = [...(report?.dangerZones ?? [])].sort((a, b) => b.dangerScore - a.dangerScore);
+    for (const dz of zones) {
+      if (items.length >= 10) { break; }
+      const key = `${dz.file}:${dz.startLine}`;
+      if (seen.has(key)) { continue; }
+      seen.add(key);
+      items.push({
+        file: dz.relativePath,
+        startLine: dz.startLine,
+        endLine: dz.endLine,
+        concept: dz.function ? `${dz.function} (${dz.category})` : dz.category,
+        whyItMatters: `Risk level ${dz.riskLevel}/5 — understanding score ${dz.understandingScore}%`,
+        priority: items.length + 1,
+      });
+    }
+
+    // Fallback: always show bottom 5 files by score if nothing else populated
+    if (items.length === 0 && report?.fileScores && report.fileScores.length > 0) {
+      const sorted = [...report.fileScores].sort((a, b) => a.score - b.score);
+      for (const f of sorted.slice(0, 5)) {
+        items.push({
+          file: f.relativePath,
+          startLine: 1,
+          endLine: 1,
+          concept: `Review: ${f.relativePath} (${f.score}% understood)`,
+          whyItMatters: f.score >= 80
+            ? `Strong score but worth revisiting to maintain mastery.`
+            : `Scored below 80% — review and retake quiz.`,
+          priority: items.length + 1,
+        });
+      }
+    }
+
+    return items;
   }
 
   private getHtml(): string {
@@ -92,7 +156,7 @@ export class ReportPanel {
     try {
       html = fs.readFileSync(templatePath, 'utf8');
     } catch {
-      return `<!DOCTYPE html><html><head><meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'unsafe-inline';"><style>body{background:#1e1e1e;color:#ccc;font-family:sans-serif;padding:40px;}h2{color:#f14c4c;}</style></head><body><h2>VibeAudit: Report template not found</h2><p>Run <code>node esbuild.config.mjs</code> then reinstall.</p></body></html>`;
+      return `<!DOCTYPE html><html><head><meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'unsafe-inline';"><style>body{background:#1e1e1e;color:#ccc;font-family:sans-serif;padding:40px;}h2{color:#f14c4c;}</style></head><body><h2>CodeLitmus: Report template not found</h2><p>Run <code>node esbuild.config.mjs</code> then reinstall.</p></body></html>`;
     }
 
     return html

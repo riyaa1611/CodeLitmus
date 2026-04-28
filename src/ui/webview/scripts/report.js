@@ -1,8 +1,8 @@
-// Report webview client-side logic
+﻿// Report webview client-side logic
 const vscode = acquireVsCodeApi();
 
 document.getElementById('start-quiz-btn').addEventListener('click', () => {
-  vscode.postMessage({ type: 'openFile', data: { command: 'vibeaudit.startQuiz' } });
+  vscode.postMessage({ type: 'openFile', data: { command: 'codelitmus.startQuiz' } });
 });
 
 // Tab switching
@@ -104,7 +104,7 @@ function renderHistory(sessions) {
 function renderTeam(teamImports) {
   const container = document.getElementById('team-list');
   if (!teamImports || teamImports.length === 0) {
-    container.innerHTML = '<p style="opacity:0.5">Import teammate score files to compare. Use &quot;VibeAudit: Import Team Scores&quot;.</p>';
+    container.innerHTML = '<p style="opacity:0.5">Import teammate score files to compare. Use &quot;CodeLitmus: Import Team Scores&quot;.</p>';
     return;
   }
   container.innerHTML = teamImports.map(t => {
@@ -224,6 +224,35 @@ window.addEventListener('message', e => {
     }
   }
 });
+
+// Draggable robot
+(function() {
+  const robot = document.getElementById('robot-buddy');
+  if (!robot) return;
+  let dragging = false, ox = 0, oy = 0;
+  robot.addEventListener('mousedown', e => {
+    dragging = true;
+    const rect = robot.getBoundingClientRect();
+    ox = e.clientX - rect.left;
+    oy = e.clientY - rect.top;
+    robot.classList.add('dragging');
+    robot.style.right = '';
+    robot.style.bottom = '';
+    robot.style.left = rect.left + 'px';
+    robot.style.top = rect.top + 'px';
+    e.preventDefault();
+  });
+  document.addEventListener('mousemove', e => {
+    if (!dragging) return;
+    robot.style.left = (e.clientX - ox) + 'px';
+    robot.style.top = (e.clientY - oy) + 'px';
+  });
+  document.addEventListener('mouseup', () => {
+    if (!dragging) return;
+    dragging = false;
+    robot.classList.remove('dragging');
+  });
+})();
 
 // Request report data on load
 vscode.postMessage({ type: 'requestReport' });

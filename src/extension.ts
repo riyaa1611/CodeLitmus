@@ -1,16 +1,14 @@
-import * as vscode from 'vscode';
+﻿import * as vscode from 'vscode';
 import { StateManager } from './storage/stateManager';
-import { ApiKeyManager } from './storage/apiKeyManager';
 import { analyzeWorkspace } from './analyzer/workspaceAnalyzer';
 import { QuizEngine } from './quiz/quizEngine';
 import { calculateScores } from './scoring/scoreCalculator';
 import { detectDangerZones } from './scoring/dangerZoneDetector';
 import { StatusBarManager } from './ui/statusBarManager';
 import { FileScoresProvider, DangerZonesProvider, PinnedFilesProvider, PinnedFileItem } from './ui/sidebarProvider';
-import { VibeAuditCodeLensProvider } from './ui/codeLensProvider';
+import { CodeLitmusCodeLensProvider } from './ui/codeLensProvider';
 import { DiagnosticsProvider } from './ui/diagnosticsProvider';
-import { VibeAuditHoverProvider } from './ui/hoverProvider';
-import { OnboardingPanel } from './ui/webview/onboardingPanel';
+import { CodeLitmusHoverProvider } from './ui/hoverProvider';
 import { QuizPanel } from './ui/webview/quizPanel';
 import { ReportPanel } from './ui/webview/reportPanel';
 import { requireWorkspace } from './utils/guards';
@@ -22,23 +20,22 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
   }
 
   const stateManager = new StateManager(context.globalState);
-  const apiKeyManager = new ApiKeyManager(context.secrets);
-  const quizEngine = new QuizEngine(stateManager, apiKeyManager, context);
+  const quizEngine = new QuizEngine(stateManager, context);
 
   const statusBar = new StatusBarManager();
   const fileScoresProvider = new FileScoresProvider();
   const dangerZonesProvider = new DangerZonesProvider();
-  const codeLensProvider = new VibeAuditCodeLensProvider();
+  const codeLensProvider = new CodeLitmusCodeLensProvider();
   const diagnosticsProvider = new DiagnosticsProvider();
-  const hoverProvider = new VibeAuditHoverProvider();
+  const hoverProvider = new CodeLitmusHoverProvider();
 
   context.subscriptions.push(statusBar, diagnosticsProvider);
 
-  vscode.window.registerTreeDataProvider('vibeaudit.fileScores', fileScoresProvider);
-  vscode.window.registerTreeDataProvider('vibeaudit.dangerZones', dangerZonesProvider);
+  vscode.window.registerTreeDataProvider('codelitmus.fileScores', fileScoresProvider);
+  vscode.window.registerTreeDataProvider('codelitmus.dangerZones', dangerZonesProvider);
   const pinnedFilesProvider = new PinnedFilesProvider();
   pinnedFilesProvider.update(stateManager.getPinnedFiles());
-  vscode.window.registerTreeDataProvider('vibeaudit.pinnedFiles', pinnedFilesProvider);
+  vscode.window.registerTreeDataProvider('codelitmus.pinnedFiles', pinnedFilesProvider);
 
   context.subscriptions.push(
     vscode.languages.registerCodeLensProvider(
@@ -70,7 +67,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
       await stateManager.saveAnalysis(analysis);
       await stateManager.setInitialized();
       vscode.window.showInformationMessage(
-        `VibeAudit: Scanned ${analysis.totalFiles} files, found ${analysis.totalCriticalFunctions} critical paths.`
+        `CodeLitmus: Scanned ${analysis.totalFiles} files, found ${analysis.totalCriticalFunctions} critical paths.`
       );
       const sessions = stateManager.getSessions();
       if (sessions.length > 0) {
@@ -83,20 +80,16 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
         statusBar.update(0);
       }
     } catch (err) {
-      vscode.window.showErrorMessage(`VibeAudit: Scan failed — ${String(err)}`);
+      vscode.window.showErrorMessage(`CodeLitmus: Scan failed — ${String(err)}`);
       statusBar.update(0);
     }
   }
 
   async function startQuizCommand(focusArea?: string, pinnedFiles?: string[]): Promise<void> {
     if (!requireWorkspace()) { return; }
-    // Do NOT return early if no API key — the quiz can run without one (local mode)
-    const hasKey = await apiKeyManager.hasApiKey();
-    // hasKey is passed down to session start to enable LLM enhancement if available
-    void hasKey;
     const session = await quizEngine.startSession(focusArea, pinnedFiles);
     if (!session || session.questions.length === 0) {
-      vscode.window.showWarningMessage('VibeAudit: No questions generated. Scan workspace first.');
+      vscode.window.showWarningMessage('CodeLitmus: No questions generated. Scan workspace first.');
       return;
     }
     const panel = QuizPanel.show(
@@ -122,26 +115,30 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
   }
 
   context.subscriptions.push(
-    vscode.commands.registerCommand('vibeaudit.scanWorkspace', async () => {
+    vscode.commands.registerCommand('codelitmus.scanWorkspace', async () => {
       if (!requireWorkspace()) { return; }
       await runScan();
     }),
 
-    vscode.commands.registerCommand('vibeaudit.setApiKey', async () => {
-      const key = await vscode.window.showInputBox({
-        prompt: 'Enter your OpenRouter API key',
-        password: true,
-        placeHolder: 'sk-or-v1-...',
-      });
-      if (key?.trim()) {
-        await apiKeyManager.setApiKey(key.trim());
-        vscode.window.showInformationMessage('VibeAudit: API key saved.');
+    vscode.commands.registerCommand('codelitmus.startQuiz', () => startQuizCommand()),
+
+    vscode.commands.registerCommand('codelitmus.resetProgress', async () => {
+      const confirm = await vscode.window.showWarningMessage(
+        'Reset all quiz history and scores?', { modal: true }, 'Reset'
+      );
+      if (confirm === 'Reset') {
+        await stateManager.resetAll();
+        await stateManager.setInitialized();
+        const analysis = stateManager.getAnalysis();
+        if (analysis) { await stateManager.saveAnalysis(analysis); }
+        statusBar.update(0);
+        fileScoresProvider.update([]);
+        dangerZonesProvider.update([]);
+        vscode.window.showInformationMessage('CodeLitmus: Progress reset. Scan workspace to begin fresh.');
       }
     }),
 
-    vscode.commands.registerCommand('vibeaudit.startQuiz', () => startQuizCommand()),
-
-    vscode.commands.registerCommand('vibeaudit.startFocusedQuiz', async (filePath?: string) => {
+    vscode.commands.registerCommand('codelitmus.startFocusedQuiz', async (filePath?: string) => {
       if (!requireWorkspace()) { return; }
       const focusArea = filePath
         ? vscode.workspace.asRelativePath(filePath)
@@ -151,7 +148,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
       await startQuizCommand(focusArea);
     }),
 
-    vscode.commands.registerCommand('vibeaudit.showReport', () => {
+    vscode.commands.registerCommand('codelitmus.showReport', () => {
       if (!requireWorkspace()) { return; }
       ReportPanel.show(
         context.extensionUri,
@@ -160,20 +157,20 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
       );
     }),
 
-    vscode.commands.registerCommand('vibeaudit.showDangerZones', () => {
+    vscode.commands.registerCommand('codelitmus.showDangerZones', () => {
       if (!requireWorkspace()) { return; }
       const report = stateManager.getReport();
       if (!report || report.dangerZones.length === 0) {
-        vscode.window.showInformationMessage('VibeAudit: No danger zones yet. Complete a quiz first.');
+        vscode.window.showInformationMessage('CodeLitmus: No danger zones yet. Complete a quiz first.');
         return;
       }
-      vscode.commands.executeCommand('vibeaudit.showReport');
+      vscode.commands.executeCommand('codelitmus.showReport');
     }),
 
-    vscode.commands.registerCommand('vibeaudit.resetScores', async () => {
+    vscode.commands.registerCommand('codelitmus.resetScores', async () => {
       if (!requireWorkspace()) { return; }
       const confirm = await vscode.window.showWarningMessage(
-        'Reset all VibeAudit scores and history?',
+        'Reset all CodeLitmus scores and history?',
         { modal: true },
         'Reset'
       );
@@ -185,11 +182,11 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
         hoverProvider.update([]);
         diagnosticsProvider.update([]);
         statusBar.update(0);
-        vscode.window.showInformationMessage('VibeAudit: All scores reset.');
+        vscode.window.showInformationMessage('CodeLitmus: All scores reset.');
       }
     }),
 
-    vscode.commands.registerCommand('vibeaudit.pinCurrentFile', async () => {
+    vscode.commands.registerCommand('codelitmus.pinCurrentFile', async () => {
       if (!requireWorkspace()) { return; }
       const editor = vscode.window.activeTextEditor;
       if (!editor) {
@@ -209,7 +206,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
       vscode.window.showInformationMessage(`Pinned: ${relativePath}`);
     }),
 
-    vscode.commands.registerCommand('vibeaudit.unpinFile', async (item?: PinnedFileItem) => {
+    vscode.commands.registerCommand('codelitmus.unpinFile', async (item?: PinnedFileItem) => {
       if (!requireWorkspace()) { return; }
       let fileToRemove: string | undefined;
       if (item) {
@@ -224,17 +221,17 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
       pinnedFilesProvider.update(pinned);
     }),
 
-    vscode.commands.registerCommand('vibeaudit.startPinnedQuiz', async () => {
+    vscode.commands.registerCommand('codelitmus.startPinnedQuiz', async () => {
       if (!requireWorkspace()) { return; }
       const pinned = stateManager.getPinnedFiles();
       if (pinned.length === 0) {
-        vscode.window.showWarningMessage('No pinned files. Open a file and run "VibeAudit: Pin File for Quiz Focus".');
+        vscode.window.showWarningMessage('No pinned files. Open a file and run "CodeLitmus: Pin File for Quiz Focus".');
         return;
       }
       await startQuizCommand(undefined, pinned.map(p => p.file));
     }),
 
-    vscode.commands.registerCommand('vibeaudit.exportScores', async () => {
+    vscode.commands.registerCommand('codelitmus.exportScores', async () => {
       if (!requireWorkspace()) { return; }
       const data = stateManager.exportState();
       if (!data) {
@@ -247,7 +244,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
       });
       if (name !== undefined) { data.exportedBy = name; }
       const uri = await vscode.window.showSaveDialog({
-        defaultUri: vscode.Uri.file('vibeaudit-scores.json'),
+        defaultUri: vscode.Uri.file('CodeLitmus-scores.json'),
         filters: { 'JSON': ['json'] },
       });
       if (!uri) { return; }
@@ -256,7 +253,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
       vscode.window.showInformationMessage(`Scores exported to ${uri.fsPath}`);
     }),
 
-    vscode.commands.registerCommand('vibeaudit.importScores', async () => {
+    vscode.commands.registerCommand('codelitmus.importScores', async () => {
       if (!requireWorkspace()) { return; }
       const uris = await vscode.window.showOpenDialog({
         filters: { 'JSON': ['json'] },
@@ -286,21 +283,12 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
 
   // First launch or restore
   if (!stateManager.isInitialized()) {
-    const hasKey = await apiKeyManager.hasApiKey();
-    const config = vscode.workspace.getConfiguration('vibeaudit');
-    // Always auto-scan on first launch regardless of API key
+    const config = vscode.workspace.getConfiguration('codelitmus');
     if (config.get<boolean>('autoScanOnOpen', true)) { runScan(); }
-    // Show onboarding as a suggestion if no key (non-blocking)
-    if (!hasKey) {
-      OnboardingPanel.show(context.extensionUri, apiKeyManager, async (key) => {
-        await apiKeyManager.setApiKey(key);
-        // No need to re-scan — scan already started above
-      });
-    }
   } else {
     const report = stateManager.getReport();
     if (report) { refreshUi(report); }
-    const config = vscode.workspace.getConfiguration('vibeaudit');
+    const config = vscode.workspace.getConfiguration('codelitmus');
     if (config.get<boolean>('autoScanOnOpen', true)) { runScan(); }
   }
 }

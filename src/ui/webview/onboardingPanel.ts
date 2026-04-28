@@ -1,4 +1,4 @@
-import * as vscode from 'vscode';
+﻿import * as vscode from 'vscode';
 import * as fs from 'fs';
 import * as path from 'path';
 import { getNonce } from './panelUtils';
@@ -52,8 +52,8 @@ export class OnboardingPanel {
       return;
     }
     const panel = vscode.window.createWebviewPanel(
-      'vibeauditOnboarding',
-      'VibeAudit — Optional: Add AI Enhancement',
+      'CodeLitmusOnboarding',
+      'CodeLitmus — Optional: Add AI Enhancement',
       vscode.ViewColumn.One,
       { enableScripts: true, localResourceRoots: [extensionUri] }
     );
@@ -96,7 +96,7 @@ export class OnboardingPanel {
   </style>
 </head>
 <body>
-  <h2>VibeAudit is ready!</h2>
+  <h2>CodeLitmus is ready!</h2>
   <p>You can start quizzing immediately — no API key needed.</p>
   <p>Add an OpenRouter API key to get AI-generated explanations:</p>
   <p>Run in project folder:</p>

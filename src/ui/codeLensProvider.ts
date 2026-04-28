@@ -1,7 +1,7 @@
-import * as vscode from 'vscode';
+﻿import * as vscode from 'vscode';
 import type { FileScore } from '../types';
 
-export class VibeAuditCodeLensProvider implements vscode.CodeLensProvider {
+export class CodeLitmusCodeLensProvider implements vscode.CodeLensProvider {
   private _onDidChangeCodeLenses = new vscode.EventEmitter<void>();
   readonly onDidChangeCodeLenses = this._onDidChangeCodeLenses.event;
   private fileScores: Map<string, number> = new Map();
@@ -16,7 +16,7 @@ export class VibeAuditCodeLensProvider implements vscode.CodeLensProvider {
   }
 
   provideCodeLenses(document: vscode.TextDocument): vscode.CodeLens[] {
-    const config = vscode.workspace.getConfiguration('vibeaudit');
+    const config = vscode.workspace.getConfiguration('codelitmus');
     if (!config.get<boolean>('showCodeLens', true)) { return []; }
 
     const score = this.fileScores.get(document.uri.fsPath) ??
@@ -25,8 +25,8 @@ export class VibeAuditCodeLensProvider implements vscode.CodeLensProvider {
     if (score === undefined) {
       const range = new vscode.Range(0, 0, 0, 0);
       return [new vscode.CodeLens(range, {
-        title: 'VibeAudit: Not audited yet | Click to audit',
-        command: 'vibeaudit.startFocusedQuiz',
+        title: 'CodeLitmus: Not audited yet | Click to audit',
+        command: 'codelitmus.startFocusedQuiz',
         arguments: [document.uri.fsPath],
       })];
     }
@@ -35,8 +35,8 @@ export class VibeAuditCodeLensProvider implements vscode.CodeLensProvider {
     const range = new vscode.Range(0, 0, 0, 0);
 
     return [new vscode.CodeLens(range, {
-      title: `VibeAudit: ${score}% understood${action}`,
-      command: score >= 80 ? '' : 'vibeaudit.startFocusedQuiz',
+      title: `CodeLitmus: ${score}% understood${action}`,
+      command: score >= 80 ? '' : 'codelitmus.startFocusedQuiz',
       arguments: [document.uri.fsPath],
     })];
   }

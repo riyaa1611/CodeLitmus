@@ -1,7 +1,7 @@
-import * as vscode from 'vscode';
+﻿import * as vscode from 'vscode';
 import type { FileScore } from '../types';
 
-export class VibeAuditHoverProvider implements vscode.HoverProvider {
+export class CodeLitmusHoverProvider implements vscode.HoverProvider {
   private fileScores: Map<string, FileScore> = new Map();
 
   update(scores: FileScore[]): void {
@@ -21,10 +21,10 @@ export class VibeAuditHoverProvider implements vscode.HoverProvider {
     const daysAgo = Math.floor((Date.now() - score.lastUpdated) / (1000 * 60 * 60 * 24));
     const timeStr = daysAgo === 0 ? 'today' : `${daysAgo} day${daysAgo > 1 ? 's' : ''} ago`;
     const md = new vscode.MarkdownString(
-      `**VibeAudit Score:** ${score.score}% (${score.questionCount} questions)\n\n` +
+      `**CodeLitmus Score:** ${score.score}% (${score.questionCount} questions)\n\n` +
       `**Risk Level:** ${score.riskLevel}/10\n\n` +
       `**Last audited:** ${timeStr}\n\n` +
-      `[Re-audit](command:vibeaudit.startFocusedQuiz) | [View Report](command:vibeaudit.showReport)`
+      `[Re-audit](command:codelitmus.startFocusedQuiz) | [View Report](command:codelitmus.showReport)`
     );
     md.isTrusted = true;
     return new vscode.Hover(md);
