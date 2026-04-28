@@ -73,8 +73,9 @@ function severityToDifficulty(severity: DetectedPattern['severity']): 1 | 2 | 3 
 }
 
 /** Build the unique question id. */
-function makeId(pattern: DetectedPattern): string {
-  return `${pattern.type}-${pattern.file.replace(/[^a-zA-Z0-9]/g, '_')}-${pattern.line}`;
+function makeId(pattern: DetectedPattern, variant = 0): string {
+  const base = `${pattern.type}-${pattern.file.replace(/[^a-zA-Z0-9]/g, '_')}-${pattern.line}`;
+  return variant === 0 ? base : `${base}-v${variant}`;
 }
 
 /** Build the 4 options from a correct answer and three wrong answers, then shuffle. */
@@ -502,6 +503,198 @@ export const QUESTION_TEMPLATES: Partial<Record<PatternType, (pattern: DetectedP
   },
 };
 
+// ─── Variant 1 templates (fix-angle) ─────────────────────────────────────────
+
+export const QUESTION_TEMPLATES_V1: Partial<Record<PatternType, (pattern: DetectedPattern) => GeneratedQuestion>> = {
+
+  MISSING_ERROR_HANDLING(pattern) {
+    const ev = pattern.evidence as MissingErrorHandlingEvidence;
+    const func = pattern.functionName;
+    const file = pattern.file;
+    const callee = ev.externalCall;
+    const question = `Function "${func}" (${file}) calls \`${callee}\` without error handling. What is the correct fix?`;
+    const options = buildOptions(
+      'Wrap the call in a try-catch block and handle or re-throw the error explicitly',
+      [
+        'Add a .then() handler that returns null on failure',
+        'Use a global error handler — individual functions do not need try-catch',
+        'Call the function synchronously so errors are thrown immediately',
+      ]
+    );
+    return { id: makeId(pattern, 1), question, difficulty: severityToDifficulty(pattern.severity), category: pattern.category, codeReference: { file: pattern.file, startLine: pattern.line, endLine: pattern.endLine ?? pattern.line + 5 }, options, explanation: pattern.correctBehavior, dangerNote: pattern.consequence, source: 'static-analysis' };
+  },
+
+  SILENT_CATCH(pattern) {
+    const func = pattern.functionName;
+    const file = pattern.file;
+    const question = `Function "${func}" (${file}) has a silent catch block. What should replace it?`;
+    const options = buildOptions(
+      'Log the error and either re-throw it or return a typed error value so callers know the operation failed',
+      [
+        'Remove the try-catch entirely — errors will bubble up automatically',
+        'Add a finally block to clean up resources',
+        'Catch only specific error types and ignore the rest',
+      ]
+    );
+    return { id: makeId(pattern, 1), question, difficulty: severityToDifficulty(pattern.severity), category: pattern.category, codeReference: { file: pattern.file, startLine: pattern.line, endLine: pattern.endLine ?? pattern.line + 5 }, options, explanation: pattern.correctBehavior, dangerNote: pattern.consequence, source: 'static-analysis' };
+  },
+
+  UNCHECKED_PARAMETER(pattern) {
+    const ev = pattern.evidence as UncheckedParameterEvidence;
+    const func = pattern.functionName;
+    const file = pattern.file;
+    const paramName = ev.parameterName;
+    const question = `Function "${func}" (${file}) uses "${paramName}" without a null check. What is the safest fix?`;
+    const options = buildOptions(
+      `Add a guard at the top: \`if (!${paramName}) return;\` or throw a descriptive error before using it`,
+      [
+        `Use optional chaining (${paramName}?.property) everywhere — no guard needed`,
+        'Add a TypeScript type annotation — it prevents undefined at compile time',
+        'Set a default value in the function signature using a fallback expression',
+      ]
+    );
+    return { id: makeId(pattern, 1), question, difficulty: severityToDifficulty(pattern.severity), category: pattern.category, codeReference: { file: pattern.file, startLine: pattern.line, endLine: pattern.endLine ?? pattern.line + 5 }, options, explanation: pattern.correctBehavior, dangerNote: pattern.consequence, source: 'static-analysis' };
+  },
+
+  UNHANDLED_ASYNC(pattern) {
+    const func = pattern.functionName;
+    const file = pattern.file;
+    const question = `Function "${func}" (${file}) has an unhandled async call. What is the correct pattern?`;
+    const options = buildOptions(
+      'Wrap the await in a try-catch block, or use .catch() on the returned Promise',
+      [
+        'Add async/await at the call site — Promise rejections handle themselves',
+        'Use Promise.allSettled() so rejected promises do not throw',
+        'Wrap the entire function body in a single try-catch at the module level',
+      ]
+    );
+    return { id: makeId(pattern, 1), question, difficulty: severityToDifficulty(pattern.severity), category: pattern.category, codeReference: { file: pattern.file, startLine: pattern.line, endLine: pattern.endLine ?? pattern.line + 5 }, options, explanation: pattern.correctBehavior, dangerNote: pattern.consequence, source: 'static-analysis' };
+  },
+
+  SQL_INJECTION_RISK(pattern) {
+    const ev = pattern.evidence as SqlInjectionEvidence;
+    const func = pattern.functionName;
+    const file = pattern.file;
+    const concatenatedVariable = ev.concatenatedVariable;
+    const question = `Function "${func}" (${file}) builds a SQL query with string concatenation of ${concatenatedVariable}. How do you fix it?`;
+    const options = buildOptions(
+      'Use parameterized queries or a prepared statement — pass user input as a separate parameter, never concatenated into the SQL string',
+      [
+        `Sanitize ${concatenatedVariable} with a regex before concatenating`,
+        'Wrap the query in a try-catch — SQL errors will be caught before they cause harm',
+        'Use an ORM — all ORMs automatically prevent SQL injection',
+      ]
+    );
+    return { id: makeId(pattern, 1), question, difficulty: severityToDifficulty(pattern.severity), category: pattern.category, codeReference: { file: pattern.file, startLine: pattern.line, endLine: pattern.endLine ?? pattern.line + 5 }, options, explanation: pattern.correctBehavior, dangerNote: pattern.consequence, source: 'static-analysis' };
+  },
+
+  HARDCODED_SECRET(pattern) {
+    const file = pattern.file;
+    const question = `A secret is hardcoded in ${file}. What is the correct remediation?`;
+    const options = buildOptions(
+      'Move the value to an environment variable, load it with process.env, and rotate the leaked credential immediately',
+      [
+        'Encrypt the value in the source file using a build-time script',
+        'Move it to a config file that is listed in .gitignore',
+        'Prefix the variable with _ to mark it as private — bundlers will strip it',
+      ]
+    );
+    return { id: makeId(pattern, 1), question, difficulty: severityToDifficulty(pattern.severity), category: pattern.category, codeReference: { file: pattern.file, startLine: pattern.line, endLine: pattern.endLine ?? pattern.line + 5 }, options, explanation: pattern.correctBehavior, dangerNote: pattern.consequence, source: 'static-analysis' };
+  },
+
+  MISSING_INPUT_VALIDATION(pattern) {
+    const func = pattern.functionName;
+    const file = pattern.file;
+    const question = `Function "${func}" (${file}) uses raw request data without validation. Which approach best fixes this?`;
+    const options = buildOptions(
+      'Validate and sanitize all incoming fields with a schema validator (e.g. Zod, Joi) before any business logic runs',
+      [
+        'Add TypeScript types to the req.body — this validates shape at runtime',
+        'Trust the database constraints to reject invalid data',
+        'Only validate fields that go into SQL queries — other fields are low risk',
+      ]
+    );
+    return { id: makeId(pattern, 1), question, difficulty: severityToDifficulty(pattern.severity), category: pattern.category, codeReference: { file: pattern.file, startLine: pattern.line, endLine: pattern.endLine ?? pattern.line + 5 }, options, explanation: pattern.correctBehavior, dangerNote: pattern.consequence, source: 'static-analysis' };
+  },
+
+  ERROR_SWALLOWING(pattern) {
+    const func = pattern.functionName;
+    const file = pattern.file;
+    const question = `Function "${func}" (${file}) has an empty catch block. What should be done?`;
+    const options = buildOptions(
+      'At minimum log the error with context; ideally re-throw or return an error value so callers can react',
+      [
+        'Empty catch blocks are acceptable for cleanup code that should never fail',
+        'Add a comment inside the catch block to document why the error is ignored',
+        'Replace try-catch with a Promise chain — .catch() handles errors differently',
+      ]
+    );
+    return { id: makeId(pattern, 1), question, difficulty: severityToDifficulty(pattern.severity), category: pattern.category, codeReference: { file: pattern.file, startLine: pattern.line, endLine: pattern.endLine ?? pattern.line + 5 }, options, explanation: pattern.correctBehavior, dangerNote: pattern.consequence, source: 'static-analysis' };
+  },
+
+  EXPOSED_INTERNAL_ERROR(pattern) {
+    const func = pattern.functionName;
+    const file = pattern.file;
+    const question = `Function "${func}" (${file}) sends err.message/err.stack to the client. How should errors be returned instead?`;
+    const options = buildOptions(
+      'Return a generic error message to the client and log the full error server-side with a correlation ID for debugging',
+      [
+        'Stringify the error object before sending — this hides the stack trace',
+        'Only send err.message, never err.stack — message is safe to expose',
+        'Wrap the response in a try-catch so the error cannot reach the client',
+      ]
+    );
+    return { id: makeId(pattern, 1), question, difficulty: severityToDifficulty(pattern.severity), category: pattern.category, codeReference: { file: pattern.file, startLine: pattern.line, endLine: pattern.endLine ?? pattern.line + 5 }, options, explanation: pattern.correctBehavior, dangerNote: pattern.consequence, source: 'static-analysis' };
+  },
+
+  DEAD_CODE_AFTER_RETURN(pattern) {
+    const func = pattern.functionName;
+    const file = pattern.file;
+    const question = `Function "${func}" (${file}) has unreachable code after a return statement. What is the correct action?`;
+    const options = buildOptions(
+      'Delete the unreachable code, or move the return statement to after the code that should execute',
+      [
+        'Wrap the unreachable code in an if-block so it can be toggled',
+        'Add a comment marking it as intentionally unreachable for documentation',
+        'Move it to a finally block — finally always runs regardless of return',
+      ]
+    );
+    return { id: makeId(pattern, 1), question, difficulty: severityToDifficulty(pattern.severity), category: pattern.category, codeReference: { file: pattern.file, startLine: pattern.line, endLine: pattern.endLine ?? pattern.line + 5 }, options, explanation: pattern.correctBehavior, dangerNote: pattern.consequence, source: 'static-analysis' };
+  },
+
+  MISSING_AWAIT(pattern) {
+    const ev = pattern.evidence as MissingAwaitEvidence;
+    const func = pattern.functionName;
+    const file = pattern.file;
+    const asyncCall = ev.asyncCall;
+    const question = `Function "${func}" (${file}) calls \`${asyncCall}\` without await. How do you fix it?`;
+    const options = buildOptions(
+      `Add \`await\` before \`${asyncCall}\` to get the resolved value, and ensure the containing function is marked async`,
+      [
+        `Assign the result to a variable first — JavaScript resolves it automatically on assignment`,
+        `Use .then() on \`${asyncCall}\` — this is equivalent to await and resolves the value immediately`,
+        `Call \`Promise.resolve(${asyncCall})\` to unwrap the Promise`,
+      ]
+    );
+    return { id: makeId(pattern, 1), question, difficulty: severityToDifficulty(pattern.severity), category: pattern.category, codeReference: { file: pattern.file, startLine: pattern.line, endLine: pattern.endLine ?? pattern.line + 5 }, options, explanation: pattern.correctBehavior, dangerNote: pattern.consequence, source: 'static-analysis' };
+  },
+
+  INCONSISTENT_RETURN_TYPE(pattern) {
+    const func = pattern.functionName;
+    const file = pattern.file;
+    const question = `Function "${func}" (${file}) returns inconsistent types. What is the correct fix?`;
+    const options = buildOptions(
+      'Unify the return type — always return the same shape (use null/undefined explicitly instead of implicit undefined from missing returns)',
+      [
+        'Add overloads so TypeScript knows all possible return types',
+        'Use a union return type annotation — TypeScript will handle the rest',
+        'Ensure all code paths return early — the last branch can remain implicit',
+      ]
+    );
+    return { id: makeId(pattern, 1), question, difficulty: severityToDifficulty(pattern.severity), category: pattern.category, codeReference: { file: pattern.file, startLine: pattern.line, endLine: pattern.endLine ?? pattern.line + 5 }, options, explanation: pattern.correctBehavior, dangerNote: pattern.consequence, source: 'static-analysis' };
+  },
+};
+
 // ─── Fallback template ────────────────────────────────────────────────────────
 
 function generateFallbackQuestion(pattern: DetectedPattern): GeneratedQuestion {
@@ -540,7 +733,8 @@ function generateFallbackQuestion(pattern: DetectedPattern): GeneratedQuestion {
  */
 export function generateQuestionFromPattern(
   pattern: DetectedPattern,
-  paths?: CodePath[]
+  paths?: CodePath[],
+  variant = 0
 ): GeneratedQuestion {
   try {
     if (!pattern || !pattern.type) {
@@ -553,13 +747,14 @@ export function generateQuestionFromPattern(
       throw new Error(`generateQuestionFromPattern: pattern of type "${pattern.type}" is missing required "functionName" field`);
     }
 
-    const templateFn = QUESTION_TEMPLATES[pattern.type];
-
-    if (templateFn) {
-      return templateFn(pattern, paths);
+    if (variant === 1) {
+      const v1Fn = QUESTION_TEMPLATES_V1[pattern.type];
+      if (v1Fn) { return v1Fn(pattern); }
     }
 
-    // No dedicated template — use fallback
+    const templateFn = QUESTION_TEMPLATES[pattern.type];
+    if (templateFn) { return templateFn(pattern, paths); }
+
     return generateFallbackQuestion(pattern);
   } catch (err) {
     if (err instanceof Error) {
@@ -570,4 +765,17 @@ export function generateQuestionFromPattern(
     }
     throw err;
   }
+}
+
+/** All variants (0 + 1) for a pattern, skipping any that fail. */
+export function generateAllVariants(pattern: DetectedPattern, paths?: CodePath[]): GeneratedQuestion[] {
+  const out: GeneratedQuestion[] = [];
+  for (const v of [0, 1]) {
+    try {
+      out.push(generateQuestionFromPattern(pattern, paths, v));
+    } catch {
+      // variant not available for this pattern
+    }
+  }
+  return out;
 }

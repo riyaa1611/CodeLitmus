@@ -1,11 +1,11 @@
-import * as vscode from 'vscode';
+﻿import * as vscode from 'vscode';
 import type { DangerZone } from '../types';
 
 export class DiagnosticsProvider {
   private readonly collection: vscode.DiagnosticCollection;
 
   constructor() {
-    this.collection = vscode.languages.createDiagnosticCollection('vibeaudit');
+    this.collection = vscode.languages.createDiagnosticCollection('codelitmus');
   }
 
   update(dangerZones: DangerZone[]): void {
@@ -25,10 +25,10 @@ export class DiagnosticsProvider {
         const range = new vscode.Range(line, 0, Math.max(line, zone.endLine), 0);
         const diag = new vscode.Diagnostic(
           range,
-          `VibeAudit: You scored ${zone.understandingScore}% on understanding this ${zone.category} code. Risk level: ${zone.riskLevel}/10.`,
+          `CodeLitmus: You scored ${zone.understandingScore}% on understanding this ${zone.category} code. Risk level: ${zone.riskLevel}/10.`,
           vscode.DiagnosticSeverity.Information
         );
-        diag.source = 'VibeAudit';
+        diag.source = 'codelitmus';
         return diag;
       });
       this.collection.set(uri, diagnostics);

@@ -1,6 +1,6 @@
-import * as vscode from 'vscode';
+﻿import * as vscode from 'vscode';
 
-const API_KEY_SECRET = 'vibeaudit.openRouterApiKey';
+const API_KEY_SECRET = 'codelitmus.openRouterApiKey';
 
 export class ApiKeyManager {
   constructor(private readonly secrets: vscode.SecretStorage) {}

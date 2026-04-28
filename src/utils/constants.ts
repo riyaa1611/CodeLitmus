@@ -1,6 +1,6 @@
-export const OPENROUTER_BASE_URL = 'https://openrouter.ai/api/v1/chat/completions';
-export const HTTP_REFERER = 'https://github.com/vibeaudit';
-export const APP_TITLE = 'VibeAudit';
+﻿export const OPENROUTER_BASE_URL = 'https://openrouter.ai/api/v1/chat/completions';
+export const HTTP_REFERER = 'https://github.com/CodeLitmus';
+export const APP_TITLE = 'codelitmus';
 
 export const SUPPORTED_EXTENSIONS = new Set(['.ts', '.tsx', '.js', '.jsx', '.py']);
 

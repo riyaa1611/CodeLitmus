@@ -1,12 +1,13 @@
-import * as vscode from 'vscode';
+﻿import * as vscode from 'vscode';
 import type { WorkspaceAnalysis, QuizSession, ScoreReport, PinnedFile, TeamExport } from '../types';
 
 const KEYS = {
-  initialized: 'vibeaudit.initialized',
-  analysis: 'vibeaudit.workspaceAnalysis',
-  sessions: 'vibeaudit.quizSessions',
-  report: 'vibeaudit.scoreReport',
-  pinnedFiles: 'vibeaudit.pinnedFiles',
+  initialized: 'codelitmus.initialized',
+  analysis: 'codelitmus.workspaceAnalysis',
+  sessions: 'codelitmus.quizSessions',
+  report: 'codelitmus.scoreReport',
+  pinnedFiles: 'codelitmus.pinnedFiles',
+  shownQuestions: 'codelitmus.shownQuestions',
 } as const;
 
 export class StateManager {
@@ -72,11 +73,26 @@ export class StateManager {
     };
   }
 
+  getShownQuestionIds(): Set<string> {
+    return new Set(this.state.get<string[]>(KEYS.shownQuestions, []));
+  }
+
+  async markQuestionsShown(ids: string[]): Promise<void> {
+    const existing = this.state.get<string[]>(KEYS.shownQuestions, []);
+    const merged = Array.from(new Set([...existing, ...ids]));
+    await this.state.update(KEYS.shownQuestions, merged);
+  }
+
+  async resetShownQuestions(): Promise<void> {
+    await this.state.update(KEYS.shownQuestions, undefined);
+  }
+
   async resetAll(): Promise<void> {
     await this.state.update(KEYS.initialized, undefined);
     await this.state.update(KEYS.analysis, undefined);
     await this.state.update(KEYS.sessions, undefined);
     await this.state.update(KEYS.report, undefined);
     await this.state.update(KEYS.pinnedFiles, undefined);
+    await this.state.update(KEYS.shownQuestions, undefined);
   }
 }

@@ -1,38 +1,29 @@
-import * as vscode from 'vscode';
-import { QuestionGenerator } from './questionGenerator';
+﻿import * as vscode from 'vscode';
 import { AnswerEvaluator } from './answerEvaluator';
 import { DifficultyManager } from './difficultyManager';
 import { SessionManager } from './sessionManager';
-import { OpenRouterClient } from '../llm/openRouterClient';
 import { StateManager } from '../storage/stateManager';
-import { ApiKeyManager } from '../storage/apiKeyManager';
 import { generateLocalQuestions } from './localQuestionGenerator';
 import type { QuizQuestion, QuizAnswer, QuizSession, CriticalPath } from '../types';
 
 export class QuizEngine {
-  private readonly generator: QuestionGenerator;
-  private readonly evaluator: AnswerEvaluator;
+  private readonly evaluator = new AnswerEvaluator();
   private readonly difficulty = new DifficultyManager();
   private readonly sessions = new SessionManager();
 
   constructor(
     private readonly stateManager: StateManager,
-    private readonly apiKeyManager: ApiKeyManager,
     private readonly context: vscode.ExtensionContext
-  ) {
-    const client = new OpenRouterClient();
-    this.generator = new QuestionGenerator(client);
-    this.evaluator = new AnswerEvaluator(client);
-  }
+  ) {}
 
   async startSession(focusArea?: string, pinnedFiles?: string[]): Promise<QuizSession | null> {
     const analysis = this.stateManager.getAnalysis();
     if (!analysis || analysis.criticalPaths.length === 0) {
-      vscode.window.showWarningMessage('No workspace analysis found. Run "VibeAudit: Scan Workspace" first.');
+      vscode.window.showWarningMessage('No workspace analysis found. Run "CodeLitmus: Scan Workspace" first.');
       return null;
     }
 
-    const config = vscode.workspace.getConfiguration('vibeaudit');
+    const config = vscode.workspace.getConfiguration('codelitmus');
     const questionCount = config.get<number>('questionsPerSession', 10);
 
     const report = this.stateManager.getReport();
@@ -70,49 +61,22 @@ export class QuizEngine {
     // Build LocalFile list from critical paths
     const localFiles = this.buildLocalFiles(candidates);
 
-    // PRIMARY: local static analysis — always works, no API key needed
+    const shownIds = this.stateManager.getShownQuestionIds();
     let questions: QuizQuestion[] = [];
     try {
       const generated = generateLocalQuestions(localFiles, {
         maxQuestions: questionCount,
         difficulty: difficulty as 1 | 2 | 3 | 4 | 5,
         focusFiles: pinnedFiles,
+        shownIds,
       });
       questions = generated.map(q => this.toQuizQuestion(q));
     } catch (err) {
       console.error('Local question generation failed:', err);
     }
 
-    // OPTIONAL: LLM fallback if no local questions generated and API key exists
     if (questions.length === 0) {
-      const apiKey = await this.apiKeyManager.getApiKey();
-      if (apiKey) {
-        const model = config.get<string>('llmModel', 'deepseek/deepseek-chat-v3-0324:free');
-        for (const candidate of candidates) {
-          if (questions.length >= questionCount) { break; }
-          try {
-            const qs = await this.generator.generateQuestions({
-              apiKey, model,
-              criticalPath: candidate,
-              profile: analysis.projectProfile,
-              count: Math.min(3, questionCount - questions.length),
-              difficulty: this.difficulty.getDifficulty(),
-            });
-            questions.push(...qs);
-          } catch (err) {
-            console.error('LLM question generation failed:', err);
-          }
-        }
-      } else {
-        vscode.window.showInformationMessage(
-          'VibeAudit: No patterns detected in selected files. Add an OpenRouter API key for AI-generated questions.',
-          'Add API Key'
-        ).then(choice => {
-          if (choice === 'Add API Key') {
-            vscode.commands.executeCommand('vibeaudit.setApiKey');
-          }
-        });
-      }
+      vscode.window.showWarningMessage('CodeLitmus: No patterns detected in scanned files. Try scanning a project with TypeScript, JavaScript, or Python code.');
     }
 
     session.questions = questions.slice(0, questionCount);
@@ -156,26 +120,7 @@ export class QuizEngine {
     question: QuizQuestion,
     selectedLabel: string
   ): Promise<QuizAnswer> {
-    const apiKey = await this.apiKeyManager.getApiKey() ?? '';
-    const config = vscode.workspace.getConfiguration('vibeaudit');
-    const model = config.get<string>('llmModel', 'deepseek/deepseek-chat-v3-0324:free');
-    const analysis = this.stateManager.getAnalysis();
-
-    let evaluation: import('../types').AnswerEvaluation = { isCorrect: false, understandingDepth: 'surface', feedback: '', conceptGap: null };
-
-    try {
-      evaluation = await this.evaluator.evaluate({
-        apiKey,
-        model,
-        question,
-        selectedLabel,
-        language: analysis?.projectProfile.primaryLanguage ?? 'typescript',
-      });
-    } catch {
-      const correct = question.options.find(o => o.isCorrect);
-      evaluation.isCorrect = correct?.label === selectedLabel;
-      evaluation.feedback = evaluation.isCorrect ? 'Correct!' : `The correct answer was: ${correct?.text}`;
-    }
+    const evaluation = this.evaluator.evaluate(question, selectedLabel);
 
     this.difficulty.recordAnswer(evaluation.isCorrect);
 
@@ -199,6 +144,7 @@ export class QuizEngine {
     const correct = ended.answers.filter(a => a.isCorrect).length;
     ended.score = ended.answers.length > 0 ? Math.round((correct / ended.answers.length) * 100) : 0;
     await this.stateManager.saveSession(ended);
+    await this.stateManager.markQuestionsShown(ended.questions.map(q => q.id));
     return ended;
   }
 

@@ -1,9 +1,17 @@
 .vscode/**
 .vscode-test/**
+.github/**
+.claude/**
+.remember/**
 src/**
+out/**
+vibeaudit/**
 node_modules/**
+docs/**
+test-local-pipeline.js
 .gitignore
 tsconfig.json
 esbuild.config.mjs
+package-lock.json
 **/*.ts
 **/*.map

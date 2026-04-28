@@ -1,4 +1,4 @@
-import * as vscode from 'vscode';
+﻿import * as vscode from 'vscode';
 import * as fs from 'fs';
 import * as path from 'path';
 import { getNonce } from './panelUtils';
@@ -36,7 +36,8 @@ export class QuizPanel {
       } else if (msg.type === 'openFile' && msg.data.command) {
         vscode.commands.executeCommand(msg.data.command);
       } else if (msg.type === 'startQuiz') {
-        vscode.commands.executeCommand('vibeaudit.startQuiz');
+        this.panel.dispose();
+        setTimeout(() => vscode.commands.executeCommand('codelitmus.startQuiz'), 100);
       } else if (msg.type === 'openFile' && msg.data.filePath) {
         vscode.window.showTextDocument(vscode.Uri.file(msg.data.filePath), { preview: false });
       }
@@ -51,8 +52,8 @@ export class QuizPanel {
       return QuizPanel.current;
     }
     const panel = vscode.window.createWebviewPanel(
-      'vibeauditQuiz',
-      'VibeAudit Quiz',
+      'CodeLitmusQuiz',
+      'CodeLitmus Quiz',
       vscode.ViewColumn.One,
       { enableScripts: true, localResourceRoots: [extensionUri], retainContextWhenHidden: true }
     );
@@ -89,7 +90,7 @@ export class QuizPanel {
     try {
       html = fs.readFileSync(templatePath, 'utf8');
     } catch {
-      return `<!DOCTYPE html><html><head><meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'unsafe-inline';"><style>body{background:#1e1e1e;color:#ccc;font-family:sans-serif;padding:40px;}h2{color:#f14c4c;}</style></head><body><h2>VibeAudit: Quiz template not found</h2><p>Run <code>node esbuild.config.mjs</code> then reinstall.</p></body></html>`;
+      return `<!DOCTYPE html><html><head><meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'unsafe-inline';"><style>body{background:#1e1e1e;color:#ccc;font-family:sans-serif;padding:40px;}h2{color:#f14c4c;}</style></head><body><h2>CodeLitmus: Quiz template not found</h2><p>Run <code>node esbuild.config.mjs</code> then reinstall.</p></body></html>`;
     }
 
     return html

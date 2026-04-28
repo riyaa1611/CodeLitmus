@@ -1,4 +1,4 @@
-import * as vscode from 'vscode';
+﻿import * as vscode from 'vscode';
 import type { FileScore, DangerZone } from '../types';
 
 export class FileScoreItem extends vscode.TreeItem {
@@ -20,7 +20,7 @@ export class FileScoreItem extends vscode.TreeItem {
       title: 'Open File',
       arguments: [vscode.Uri.file(fileScore.file)],
     };
-    this.contextValue = 'vibeauditFile';
+    this.contextValue = 'CodeLitmusFile';
   }
 }
 
@@ -86,7 +86,7 @@ export class PinnedFileItem extends vscode.TreeItem {
     super(pinnedFile.relativePath, vscode.TreeItemCollapsibleState.None);
     this.tooltip = pinnedFile.file;
     this.iconPath = new vscode.ThemeIcon('pin');
-    this.contextValue = 'vibeauditPinnedFile';
+    this.contextValue = 'codelitmusPinnedFile';
     this.command = {
       command: 'vscode.open',
       title: 'Open File',

@@ -1,11 +1,11 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src {{cspSource}} 'unsafe-inline'; script-src 'nonce-{{nonce}}';">
   <link rel="stylesheet" href="{{stylesUri}}">
-  <title>VibeAudit Report</title>
+  <title>CodeLitmus Report</title>
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
     body {
@@ -23,8 +23,8 @@
     }
 
     .hero { text-align: center; padding: 32px 0; }
-    .score-circle { display: inline-block; position: relative; }
-    .score-number { font-size: 56px; font-weight: 700; }
+    .score-circle { display: inline-block; position: relative; overflow: visible; }
+    .score-number { font-size: 42px; font-weight: 700; }
     .score-label { font-size: 15px; opacity: 0.7; margin-top: 6px; }
 
     .tabs {
@@ -82,7 +82,8 @@
     .score-solid    { color: var(--vscode-charts-green, #89d185); }
     .score-deep     { color: var(--vscode-charts-blue, #75beff); }
 
-    #robot-buddy { position: fixed; bottom: 16px; left: 16px; z-index: 1000; pointer-events: none; animation: robot-bob 3s ease-in-out infinite; }
+    #robot-buddy { position: fixed; bottom: 16px; right: 16px; z-index: 1000; cursor: grab; user-select: none; animation: robot-bob 3s ease-in-out infinite; }
+    #robot-buddy.dragging { cursor: grabbing; animation: none; }
     @keyframes robot-bob { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-6px); } }
     .r-eye { animation: r-blink 4s ease-in-out infinite; transform-box: fill-box; transform-origin: center; }
     @keyframes r-blink { 0%,88%,100% { transform: scaleY(1); } 92% { transform: scaleY(0.05); } }
@@ -107,6 +108,7 @@
       </div>
     </div>
     <div class="score-label" id="score-label">Run a quiz to see your understanding score</div>
+    <div style="font-size:11px;opacity:0.4;margin-top:4px">cumulative score across all sessions</div>
     <button id="start-quiz-btn" style="margin-top:16px;background:var(--vscode-button-background,#0e639c);color:var(--vscode-button-foreground,#fff);border:none;padding:8px 20px;border-radius:4px;cursor:pointer;font-size:14px;">Start Quiz</button>
   </div>
 
@@ -147,7 +149,7 @@
   </div>
 
   <div class="tab-content" id="tab-team">
-    <div id="team-list"><p style="opacity:0.5">Import teammate score files to compare. Use "VibeAudit: Import Team Scores".</p></div>
+    <div id="team-list"><p style="opacity:0.5">Import teammate score files to compare. Use "CodeLitmus: Import Team Scores".</p></div>
   </div>
 
   <div id="robot-buddy">

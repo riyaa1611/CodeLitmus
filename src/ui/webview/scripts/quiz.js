@@ -1,4 +1,4 @@
-// Quiz webview client-side logic
+﻿// Quiz webview client-side logic
 const vscode = acquireVsCodeApi();
 
 let questions = [];
@@ -130,8 +130,37 @@ nextBtn.addEventListener('click', () => {
   }
 });
 
-viewReportBtn.addEventListener('click', () => vscode.postMessage({ type: 'openFile', data: { command: 'vibeaudit.showReport' } }));
+viewReportBtn.addEventListener('click', () => vscode.postMessage({ type: 'openFile', data: { command: 'codelitmus.showReport' } }));
 quizAgainBtn.addEventListener('click', () => vscode.postMessage({ type: 'startQuiz', data: {} }));
+
+// Draggable robot
+(function() {
+  const robot = document.getElementById('robot-buddy');
+  if (!robot) return;
+  let dragging = false, ox = 0, oy = 0;
+  robot.addEventListener('mousedown', e => {
+    dragging = true;
+    const rect = robot.getBoundingClientRect();
+    ox = e.clientX - rect.left;
+    oy = e.clientY - rect.top;
+    robot.classList.add('dragging');
+    robot.style.right = '';
+    robot.style.bottom = '';
+    robot.style.left = rect.left + 'px';
+    robot.style.top = rect.top + 'px';
+    e.preventDefault();
+  });
+  document.addEventListener('mousemove', e => {
+    if (!dragging) return;
+    robot.style.left = (e.clientX - ox) + 'px';
+    robot.style.top = (e.clientY - oy) + 'px';
+  });
+  document.addEventListener('mouseup', () => {
+    if (!dragging) return;
+    dragging = false;
+    robot.classList.remove('dragging');
+  });
+})();
 
 window.addEventListener('message', e => {
   const msg = e.data;

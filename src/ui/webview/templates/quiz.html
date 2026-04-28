@@ -1,11 +1,11 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src {{cspSource}} 'unsafe-inline'; script-src 'nonce-{{nonce}}';">
   <link rel="stylesheet" href="{{stylesUri}}">
-  <title>VibeAudit Quiz</title>
+  <title>CodeLitmus Quiz</title>
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
     body {
@@ -84,11 +84,18 @@
     .score-big { font-size: 64px; font-weight: 700; margin: 20px 0; }
     .summary-label { opacity: 0.7; margin-bottom: 6px; }
 
-    #robot-buddy { position: fixed; bottom: 16px; left: 16px; z-index: 1000; pointer-events: none; --robot-color: var(--vscode-button-background, #0e639c); animation: robot-bob 3s ease-in-out infinite; }
-    #robot-buddy.robot-happy { --robot-color: #4ec94e; animation: robot-jump 0.45s ease-in-out 3; }
+    #robot-buddy { position: fixed; bottom: 16px; right: 16px; z-index: 1000; cursor: grab; user-select: none; --robot-color: var(--vscode-button-background, #0e639c); animation: robot-bob 3s ease-in-out infinite; }
+    #robot-buddy.dragging { cursor: grabbing; animation: none; }
+    #robot-buddy.robot-happy { --robot-color: #4ec94e; animation: robot-clap-body 0.35s ease-in-out 4; }
+    #robot-buddy.robot-happy .r-arm-l { animation: r-clap-l 0.35s ease-in-out 4; }
+    #robot-buddy.robot-happy .r-arm-r { animation: r-clap-r 0.35s ease-in-out 4; }
     #robot-buddy.robot-sad { --robot-color: #f14c4c; animation: robot-shake 0.5s ease-in-out 3, robot-droop 2s 1.5s ease-in-out infinite; }
     @keyframes robot-bob { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-6px); } }
-    @keyframes robot-jump { 0%,100% { transform: translateY(0) scale(1); } 45% { transform: translateY(-15px) scale(1.1); } }
+    @keyframes robot-clap-body { 0%,100% { transform: translateY(0) scale(1); } 50% { transform: translateY(-4px) scale(1.04); } }
+    .r-arm-l { transform-box: fill-box; transform-origin: top right; }
+    .r-arm-r { transform-box: fill-box; transform-origin: top left; }
+    @keyframes r-clap-l { 0%,100% { transform: rotate(0deg); } 50% { transform: rotate(60deg); } }
+    @keyframes r-clap-r { 0%,100% { transform: rotate(0deg); } 50% { transform: rotate(-60deg); } }
     @keyframes robot-shake { 0%,100% { transform: translateX(0) rotate(0deg); } 25% { transform: translateX(-7px) rotate(-5deg); } 75% { transform: translateX(7px) rotate(5deg); } }
     @keyframes robot-droop { 0%,100% { transform: translateY(0); } 50% { transform: translateY(4px); } }
     .r-eye { animation: r-blink 4s ease-in-out infinite; transform-box: fill-box; transform-origin: center; }
@@ -173,8 +180,8 @@
       <!-- Chest light -->
       <circle class="r-chest" cx="27" cy="51" r="3.2" fill="var(--robot-color,#0e639c)"/>
       <!-- Arms -->
-      <rect x="1" y="43" width="8" height="13" rx="4" fill="var(--vscode-editor-background,#1e1e1e)" stroke="var(--robot-color,#0e639c)" stroke-width="1.5"/>
-      <rect x="45" y="43" width="8" height="13" rx="4" fill="var(--vscode-editor-background,#1e1e1e)" stroke="var(--robot-color,#0e639c)" stroke-width="1.5"/>
+      <rect id="r-arm-l" class="r-arm-l" x="1" y="43" width="8" height="13" rx="4" fill="var(--vscode-editor-background,#1e1e1e)" stroke="var(--robot-color,#0e639c)" stroke-width="1.5"/>
+      <rect id="r-arm-r" class="r-arm-r" x="45" y="43" width="8" height="13" rx="4" fill="var(--vscode-editor-background,#1e1e1e)" stroke="var(--robot-color,#0e639c)" stroke-width="1.5"/>
       <!-- Legs -->
       <rect x="14" y="61" width="10" height="9" rx="3" fill="var(--vscode-editor-background,#1e1e1e)" stroke="var(--robot-color,#0e639c)" stroke-width="1.5"/>
       <rect x="30" y="61" width="10" height="9" rx="3" fill="var(--vscode-editor-background,#1e1e1e)" stroke="var(--robot-color,#0e639c)" stroke-width="1.5"/>

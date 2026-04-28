@@ -1,9 +1,9 @@
 {
-  "name": "vibeaudit",
-  "displayName": "VibeAudit — Do You Understand Your Own Code?",
+  "name": "codelitmus",
+  "displayName": "CodeLitmus — Do You Understand Your Own Code?",
   "description": "AI-powered codebase understanding assessment. Stop vibe coding blindly — find out what you actually know.",
-  "version": "0.1.0",
-  "publisher": "riyaa1611",
+  "version": "0.1.1",
+  "publisher": "RiyaGaur",
   "engines": { "vscode": "^1.85.0" },
   "categories": ["Testing", "Education", "Other"],
   "keywords": ["vibe coding", "code understanding", "quiz", "ai", "assessment", "audit", "learning"],
@@ -21,57 +21,58 @@
   "icon": "media/icon.png",
   "repository": {
     "type": "git",
-    "url": "https://github.com/riyaa1611/vibeaudit"
+    "url": "https://github.com/riyaa1611/CodeLitmus"
   },
   "contributes": {
     "commands": [
-      { "command": "vibeaudit.scanWorkspace", "title": "VibeAudit: Scan Workspace" },
-      { "command": "vibeaudit.startQuiz", "title": "VibeAudit: Start Quiz" },
-      { "command": "vibeaudit.startFocusedQuiz", "title": "VibeAudit: Quiz on Current File" },
-      { "command": "vibeaudit.showReport", "title": "VibeAudit: Show Report" },
-      { "command": "vibeaudit.showDangerZones", "title": "VibeAudit: Show Danger Zones" },
-      { "command": "vibeaudit.setApiKey", "title": "VibeAudit: Set OpenRouter API Key" },
-      { "command": "vibeaudit.resetScores", "title": "VibeAudit: Reset All Scores" },
-      { "command": "vibeaudit.pinCurrentFile", "title": "VibeAudit: Pin File for Quiz Focus" },
-      { "command": "vibeaudit.unpinFile", "title": "VibeAudit: Unpin File" },
-      { "command": "vibeaudit.startPinnedQuiz", "title": "VibeAudit: Quiz Pinned Files Only" },
-      { "command": "vibeaudit.exportScores", "title": "VibeAudit: Export Scores (Team)" },
-      { "command": "vibeaudit.importScores", "title": "VibeAudit: Import Team Scores" }
+      { "command": "codelitmus.scanWorkspace", "title": "CodeLitmus: Scan Workspace" },
+      { "command": "codelitmus.startQuiz", "title": "CodeLitmus: Start Quiz", "icon": "$(beaker)" },
+      { "command": "codelitmus.resetProgress", "title": "CodeLitmus: Reset Progress" },
+      { "command": "codelitmus.startFocusedQuiz", "title": "CodeLitmus: Quiz on Current File" },
+      { "command": "codelitmus.showReport", "title": "CodeLitmus: Show Report" },
+      { "command": "codelitmus.showDangerZones", "title": "CodeLitmus: Show Danger Zones" },
+      { "command": "codelitmus.setApiKey", "title": "CodeLitmus: Set OpenRouter API Key" },
+      { "command": "codelitmus.resetScores", "title": "CodeLitmus: Reset All Scores" },
+      { "command": "codelitmus.pinCurrentFile", "title": "CodeLitmus: Pin File for Quiz Focus" },
+      { "command": "codelitmus.unpinFile", "title": "CodeLitmus: Unpin File" },
+      { "command": "codelitmus.startPinnedQuiz", "title": "CodeLitmus: Quiz Pinned Files Only" },
+      { "command": "codelitmus.exportScores", "title": "CodeLitmus: Export Scores (Team)" },
+      { "command": "codelitmus.importScores", "title": "CodeLitmus: Import Team Scores" }
     ],
     "configuration": {
-      "title": "VibeAudit",
+      "title": "CodeLitmus",
       "properties": {
-        "vibeaudit.llmModel": {
+        "codelitmus.llmModel": {
           "type": "string",
           "default": "deepseek/deepseek-chat-v3-0324:free",
           "description": "OpenRouter model ID for quiz generation. Browse free models at https://openrouter.ai/models?q=free",
           "order": 1
         },
-        "vibeaudit.questionsPerSession": {
+        "codelitmus.questionsPerSession": {
           "type": "number",
           "default": 10,
           "minimum": 3,
           "maximum": 15,
           "description": "Number of questions per quiz session"
         },
-        "vibeaudit.difficultyOverride": {
+        "codelitmus.difficultyOverride": {
           "type": "number",
           "default": 0,
           "minimum": 0,
           "maximum": 5,
           "description": "Fixed quiz difficulty (1=Easy, 3=Normal, 5=Hard). Set to 0 to always prompt."
         },
-        "vibeaudit.autoScanOnOpen": {
+        "codelitmus.autoScanOnOpen": {
           "type": "boolean",
           "default": true,
           "description": "Automatically scan workspace when opened"
         },
-        "vibeaudit.showCodeLens": {
+        "codelitmus.showCodeLens": {
           "type": "boolean",
           "default": true,
-          "description": "Show VibeAudit CodeLens annotations above functions"
+          "description": "Show CodeLitmus CodeLens annotations above functions"
         },
-        "vibeaudit.supportedLanguages": {
+        "codelitmus.supportedLanguages": {
           "type": "array",
           "default": ["typescript", "javascript", "python"],
           "description": "Languages to analyze"
@@ -81,51 +82,58 @@
     "viewsContainers": {
       "activitybar": [
         {
-          "id": "vibeaudit",
-          "title": "VibeAudit",
+          "id": "codelitmus",
+          "title": "CodeLitmus",
           "icon": "media/sidebar-icon.svg"
         }
       ]
     },
     "views": {
-      "vibeaudit": [
+      "codelitmus": [
         {
-          "id": "vibeaudit.fileScores",
+          "id": "codelitmus.fileScores",
           "name": "Understanding Scores"
         },
         {
-          "id": "vibeaudit.dangerZones",
+          "id": "codelitmus.dangerZones",
           "name": "Danger Zones"
         },
         {
-          "id": "vibeaudit.pinnedFiles",
+          "id": "codelitmus.pinnedFiles",
           "name": "Pinned Focus Files"
         }
       ]
     },
     "menus": {
+      "editor/title": [
+        {
+          "command": "codelitmus.startQuiz",
+          "group": "navigation",
+          "when": "workspaceFolderCount > 0"
+        }
+      ],
       "view/item/context": [
         {
-          "command": "vibeaudit.startFocusedQuiz",
-          "when": "view == vibeaudit.fileScores",
-          "group": "vibeaudit"
+          "command": "codelitmus.startFocusedQuiz",
+          "when": "view == codelitmus.fileScores",
+          "group": "codelitmus"
         },
         {
-          "command": "vibeaudit.unpinFile",
-          "when": "view == vibeaudit.pinnedFiles && viewItem == vibeauditPinnedFile",
-          "group": "vibeaudit"
+          "command": "codelitmus.unpinFile",
+          "when": "view == codelitmus.pinnedFiles && viewItem == codelitmusPinnedFile",
+          "group": "codelitmus"
         }
       ]
     },
     "keybindings": [
       {
-        "command": "vibeaudit.startQuiz",
+        "command": "codelitmus.startQuiz",
         "key": "ctrl+alt+v",
         "mac": "cmd+alt+v",
         "when": "workspaceFolderCount > 0"
       },
       {
-        "command": "vibeaudit.showReport",
+        "command": "codelitmus.showReport",
         "key": "ctrl+alt+r",
         "mac": "cmd+alt+r",
         "when": "workspaceFolderCount > 0"

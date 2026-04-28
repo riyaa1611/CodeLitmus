@@ -1,0 +1,13 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npx tsc:*)",
+      "Bash(npm install:*)",
+      "Bash(./node_modules/.bin/tsc --noEmit)",
+      "Bash(./node_modules/.bin/tsc)",
+      "Bash(node test-local-pipeline.js)",
+      "Bash(node esbuild.config.mjs)",
+      "Bash(npm run:*)"
+    ]
+  }
+}
