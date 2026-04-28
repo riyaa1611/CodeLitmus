@@ -32,14 +32,17 @@ export function calculateScores(
     }
   }
 
-  const fileScores: FileScore[] = Array.from(fileMap.entries()).map(([file, data]) => ({
-    file,
-    relativePath: file,
-    score: data.total > 0 ? Math.round((data.correct / data.total) * 100) : 0,
-    questionCount: data.total,
-    riskLevel: data.riskLevel,
-    lastUpdated: Date.now(),
-  }));
+  const fileScores: FileScore[] = Array.from(fileMap.entries()).map(([file, data]) => {
+    const cp = analysis.criticalPaths.find(c => c.file === file);
+    return {
+      file,
+      relativePath: cp?.relativePath ?? file,
+      score: data.total > 0 ? Math.round((data.correct / data.total) * 100) : 0,
+      questionCount: data.total,
+      riskLevel: data.riskLevel,
+      lastUpdated: Date.now(),
+    };
+  });
 
   const categoryScores: CategoryScore[] = Array.from(categoryMap.entries()).map(([category, data]) => ({
     category,

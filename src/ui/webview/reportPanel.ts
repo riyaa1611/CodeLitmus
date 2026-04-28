@@ -22,6 +22,8 @@ export class ReportPanel {
     this.panel.webview.onDidReceiveMessage(msg => {
       if (msg.type === 'requestReport') {
         this.sendReport();
+      } else if (msg.type === 'openFile' && msg.data.command) {
+        vscode.commands.executeCommand(msg.data.command);
       } else if (msg.type === 'openFile' && msg.data.filePath) {
         const uri = vscode.Uri.file(msg.data.filePath);
         const opts: vscode.TextDocumentShowOptions = {};
